@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<meta name="theme-color" content="#0f2027" />
+<title>A股智能选股 · 主力建仓+洗盘信号</title>
+<style>
+  :root{
+    --bg:#0b1016; --card:#151c28; --card2:#1b2433; --border:#273244;
+    --txt:#e8eef7; --sub:#9aa7bd; --muted:#6b7689;
+    --up:#ff3b30; --down:#34c759; --warn:#ff9f0a; --blue:#0a84ff; --purple:#bf5af2;
+    --pass:#30d158; --fail:#8a94a6;
+    --grad:linear-gradient(135deg,#0f2027 0%,#203a43 50%,#2c5364 100%);
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{margin:0;padding:0}
+  body{
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;
+    background:var(--bg);color:var(--txt);line-height:1.6;
+    -webkit-font-smoothing:antialiased;padding-bottom:40px;
+  }
+  .wrap{max-width:880px;margin:0 auto;padding:0 16px}
+  /* 头部 */
+  header{background:var(--grad);padding:26px 0 22px;text-align:center;position:relative;overflow:hidden}
+  header::after{content:"";position:absolute;inset:0;background:radial-gradient(circle at 70% 0%,rgba(191,90,242,.18),transparent 55%)}
+  .brand{font-size:22px;font-weight:800;letter-spacing:1px;position:relative}
+  .brand .dot{color:var(--pass)}
+  .sub-title{font-size:12px;color:var(--sub);margin-top:6px;position:relative}
+  .badge-src{display:inline-block;margin-top:10px;font-size:11px;color:#7fe7c0;background:rgba(48,209,88,.12);border:1px solid rgba(48,209,88,.3);padding:3px 10px;border-radius:20px;position:relative}
+  /* 设置 */
+  .gear{position:absolute;top:16px;right:16px;width:34px;height:34px;border-radius:50%;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.15);color:#fff;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center}
+  .gear:active{transform:scale(.92)}
+  /* 输入区 */
+  .search{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:16px;margin-top:-18px;position:relative;z-index:2;box-shadow:0 8px 30px rgba(0,0,0,.4)}
+  .row{display:flex;gap:10px}
+  .row input{flex:1;min-width:0;background:var(--card2);border:1px solid var(--border);color:var(--txt);font-size:16px;padding:13px 14px;border-radius:12px;outline:none}
+  .row input:focus{border-color:var(--blue)}
+  .row input::placeholder{color:var(--muted)}
+  button.go{background:linear-gradient(135deg,#0a84ff,#bf5af2);color:#fff;border:none;font-size:15px;font-weight:700;padding:0 22px;border-radius:12px;cursor:pointer;white-space:nowrap}
+  button.go:active{transform:scale(.97)}
+  button.go[disabled]{opacity:.55;cursor:not-allowed}
+  .quick{display:flex;flex-wrap:wrap;gap:7px;margin-top:12px}
+  .quick span{font-size:12px;color:var(--sub);background:var(--card2);border:1px solid var(--border);padding:5px 11px;border-radius:20px;cursor:pointer}
+  .quick span:active{background:#243046}
+  /* 状态 */
+  .status{text-align:center;padding:30px 10px;color:var(--sub);font-size:14px}
+  .spin{width:26px;height:26px;border:3px solid var(--border);border-top-color:var(--blue);border-radius:50%;animation:r .8s linear infinite;margin:0 auto 12px}
+  @keyframes r{to{transform:rotate(360deg)}}
+  .err{background:rgba(255,59,48,.1);border:1px solid rgba(255,59,48,.3);color:#ffb3ad;border-radius:12px;padding:14px;text-align:center;font-size:14px}
+  /* 结果 */
+  .hide{display:none}
+  /* 综合结论 */
+  .verdict{border-radius:16px;padding:18px 16px;margin-top:16px;text-align:center;border:1px solid var(--border)}
+  .verdict.pass{background:linear-gradient(135deg,rgba(48,209,88,.18),rgba(48,209,88,.04));border-color:rgba(48,209,88,.4)}
+  .verdict.fail{background:linear-gradient(135deg,rgba(138,148,166,.12),rgba(138,148,166,.03));border-color:rgba(138,148,166,.3)}
+  .v-label{font-size:12px;color:var(--sub)}
+  .v-text{font-size:21px;font-weight:800;margin-top:4px}
+  .verdict.pass .v-text{color:var(--pass)}
+  .verdict.fail .v-text{color:var(--fail)}
+  .v-count{font-size:12px;color:var(--sub);margin-top:6px}
+  /* 指标卡片网格 */
+  .grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-top:14px}
+  .mcard{background:var(--card);border:1px solid var(--border);border-radius:13px;padding:13px 12px}
+  .mcard .lab{font-size:11px;color:var(--muted)}
+  .mcard .val{font-size:20px;font-weight:800;margin-top:3px}
+  .mcard .ext{font-size:11px;color:var(--sub);margin-top:2px}
+  .up{color:var(--up)} .down{color:var(--down)}
+  /* 信号条 */
+  .signals{display:flex;flex-direction:column;gap:9px;margin-top:14px}
+  .sig{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:12px 13px;display:flex;align-items:center;gap:11px}
+  .sig .ico{width:34px;height:34px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0}
+  .sig .ico.main{background:rgba(191,90,242,.15);color:#d6a3ff}
+  .sig .ico.wash{background:rgba(255,159,10,.15);color:#ffbe43}
+  .sig .t{font-size:12px;color:var(--muted)}
+  .sig .v{font-size:13.5px;font-weight:600;margin-top:1px}
+  /* 条件列表 */
+  .sec-t{font-size:13px;color:var(--sub);margin:20px 2px 10px;font-weight:600}
+  .cond{background:var(--card);border:1px solid var(--border);border-radius:13px;padding:14px 13px;margin-bottom:10px;display:flex;gap:12px;align-items:flex-start}
+  .cond .ck{width:24px;height:24px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800;margin-top:1px}
+  .ck.yes{background:rgba(48,209,88,.18);color:var(--pass);border:1px solid rgba(48,209,88,.4)}
+  .ck.no{background:rgba(138,148,166,.12);color:var(--fail);border:1px solid rgba(138,148,166,.3)}
+  .cond .body{flex:1;min-width:0}
+  .cond .num{font-size:11px;color:var(--blue);font-weight:700}
+  .cond .ttl{font-size:14px;font-weight:600;margin-top:1px}
+  .cond .meta{font-size:12px;color:var(--sub);margin-top:4px}
+  .cond .meta b{color:var(--txt);font-weight:600}
+  .mini{display:flex;flex-wrap:wrap;gap:5px;margin-top:7px}
+  .pill{font-size:11px;padding:3px 8px;border-radius:20px;border:1px solid var(--border);background:var(--card2);color:var(--sub)}
+  .pill.on{color:#7fe7c0;border-color:rgba(48,209,88,.35);background:rgba(48,209,88,.08)}
+  /* K线表 */
+  table{width:100%;border-collapse:collapse;font-size:12px;margin-top:6px}
+  th,td{padding:7px 6px;text-align:right;border-bottom:1px solid var(--border)}
+  th{color:var(--muted);font-weight:600;text-align:right;position:sticky;top:0;background:var(--card2)}
+  td.l,th.l{text-align:left}
+  .tbl-wrap{background:var(--card);border:1px solid var(--border);border-radius:13px;overflow:hidden;margin-top:8px}
+  .tbl-scroll{max-height:280px;overflow:auto}
+  /* 设置面板 */
+  .overlay{position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:50;display:none;align-items:flex-end;justify-content:center}
+  .overlay.show{display:flex}
+  .sheet{background:var(--card);width:100%;max-width:880px;border-radius:18px 18px 0 0;padding:20px 18px 26px;animation:up .25s ease}
+  @keyframes up{from{transform:translateY(40px);opacity:.6}}
+  .sheet h3{margin:0 0 4px;font-size:16px}
+  .sheet p{margin:0 0 14px;color:var(--sub);font-size:12px}
+  .sheet label{font-size:12px;color:var(--sub);display:block;margin-bottom:6px}
+  .sheet input{width:100%;background:var(--card2);border:1px solid var(--border);color:var(--txt);font-size:14px;padding:11px;border-radius:10px;outline:none;font-family:inherit}
+  .sheet .btns{display:flex;gap:10px;margin-top:16px}
+  .sheet button{flex:1;padding:12px;border-radius:10px;border:none;font-size:14px;font-weight:600;cursor:pointer}
+  .btn-sv{background:linear-gradient(135deg,#0a84ff,#bf5af2);color:#fff}
+  .btn-cl{background:var(--card2);color:var(--sub);border:1px solid var(--border)}
+  .foot{text-align:center;color:var(--muted);font-size:11px;margin-top:26px;line-height:1.7}
+  .foot a{color:var(--sub)}
+  @media (min-width:560px){
+    .grid{grid-template-columns:repeat(4,1fr)}
+    .brand{font-size:26px}
+  }
+</style>
+</head>
+<body>
+<header>
+  <div class="gear" id="gearBtn" title="后端地址设置">⚙</div>
+  <div class="brand">A股智能选股 <span class="dot">·</span> 主力信号</div>
+  <div class="sub-title">主力底部建仓 + 洗盘结束 五条件联动筛选</div>
+  <div class="badge-src">数据源：AKShare（实时行情）</div>
+</header>
+
+<div class="wrap">
+  <!-- 搜索 -->
+  <div class="search">
+    <div class="row">
+      <input id="code" inputmode="numeric" placeholder="输入股票代码，如 000001 或 600519" />
+      <button class="go" id="goBtn">开始分析</button>
+    </div>
+    <div class="quick">
+      <span data-c="000001">平安银行</span>
+      <span data-c="600519">贵州茅台</span>
+      <span data-c="300750">宁德时代</span>
+      <span data-c="000858">五粮液</span>
+      <span data-c="002594">比亚迪</span>
+    </div>
+  </div>
+
+  <!-- 状态区 -->
+  <div id="statusBox"></div>
+
+  <!-- 结果区 -->
+  <div id="result" class="hide"></div>
+
+  <div class="foot">
+    本工具基于公开行情数据，通过量价形态识别主力建仓与洗盘痕迹，<br/>
+    仅供学习研究参考，不构成任何投资建议。股市有风险，入市需谨慎。<br/>
+    © AKShare · 单文件前端 + Flask 后端
+  </div>
+</div>
+
+<!-- 设置面板 -->
+<div class="overlay" id="overlay">
+  <div class="sheet">
+    <h3>后端地址设置</h3>
+    <p>本地直接打开 HTML 时默认连接本机 5000 端口；部署到服务器后请填写你的 HTTPS 接口地址（微信内打开需 HTTPS）。</p>
+    <label>接口地址（留空则同源）</label>
+    <input id="apiInput" placeholder="如 https://your-domain.com" />
+    <div class="btns">
+      <button class="btn-cl" id="closeSheet">取消</button>
+      <button class="btn-sv" id="saveSheet">保存</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ====== 接口地址配置 ====== */
+function defaultBase(){
+  // 本地 file:// 或 localhost 访问时用本机后端；部署后用同源
+  if(location.protocol === 'file:' || location.hostname === 'localhost' || location.hostname === '127.0.0.1'){
+    return 'http://localhost:5000';
+  }
+  return ''; // 同源
+}
+let API_BASE = localStorage.getItem('api_base') || defaultBase();
+
+const $ = id => document.getElementById(id);
+const codeEl = $('code'), goBtn = $('goBtn'), statusBox = $('statusBox'), result = $('result');
+
+/* ====== 事件 ====== */
+goBtn.addEventListener('click', doAnalyze);
+codeEl.addEventListener('keydown', e=>{ if(e.key==='Enter') doAnalyze(); });
+document.querySelectorAll('.quick span').forEach(s=>{
+  s.addEventListener('click', ()=>{ codeEl.value = s.dataset.c; doAnalyze(); });
+});
+$('gearBtn').addEventListener('click', ()=>{ $('apiInput').value = API_BASE; $('overlay').classList.add('show'); });
+$('closeSheet').addEventListener('click', ()=> $('overlay').classList.remove('show'));
+$('saveSheet').addEventListener('click', ()=>{
+  let v = $('apiInput').value.trim();
+  API_BASE = v; localStorage.setItem('api_base', v);
+  $('overlay').classList.remove('show');
+});
+
+/* ====== 主流程 ====== */
+async function doAnalyze(){
+  const code = codeEl.value.trim();
+  if(!code){ showToast('请输入股票代码'); return; }
+  setLoading('正在获取 ' + code + ' 的行情数据并分析…');
+  result.classList.add('hide');
+  goBtn.disabled = true;
+  try{
+    const url = (API_BASE||'') + '/api/analyze?code=' + encodeURIComponent(code) + '&_t=' + Date.now();
+    const res = await fetch(url);
+    const data = await res.json();
+    if(!data.ok){ setError(data.msg || '查询失败'); return; }
+    render(data, code);
+  }catch(e){
+    setError('网络或后端连接失败：' + e.message + '<br/>请确认后端已启动，或点右上角 ⚙ 设置正确的接口地址。');
+  }finally{
+    goBtn.disabled = false;
+  }
+}
+
+function setLoading(txt){
+  statusBox.innerHTML = '<div class="status"><div class="spin"></div>'+txt+'</div>';
+}
+function setError(txt){
+  statusBox.innerHTML = '<div class="err">'+txt+'</div>';
+}
+function showToast(txt){
+  statusBox.innerHTML = '<div class="err" style="background:rgba(255,159,10,.1);border-color:rgba(255,159,10,.3);color:#ffbe43">'+txt+'</div>';
+}
+
+/* ====== 渲染 ====== */
+function fmtNum(v,d=2){ if(v==null||v===undefined||isNaN(v)) return '--'; return Number(v).toFixed(d); }
+function fmtVol(v){ v=Number(v)||0; if(v>=1e8) return (v/1e8).toFixed(2)+'亿'; if(v>=1e4) return (v/1e4).toFixed(2)+'万'; return v; }
+function pctClass(p){ return p>0?'up':(p<0?'down':''); }
+function sign(p){ return p>0?'+':''; }
+
+function render(d, code){
+  statusBox.innerHTML = '';
+  const c = d.conditions;
+  const today = d.today;
+  const passCount = [c.c1_price_range,c.c2_today_gain,c.c3_amount,c.c4_main_build,c.c5_wash_end].filter(x=>x.pass).length;
+  const allPass = c.all_pass;
+
+  let html = '';
+  // 综合结论
+  html += `<div class="verdict ${allPass?'pass':'fail'}">
+    <div class="v-label">综合结论 · ${d.symbol}</div>
+    <div class="v-text">${allPass?'✓ 符合全部五项条件':'未全部符合'}</div>
+    <div class="v-count">${passCount}/5 项条件通过 · ${today.date}</div>
+  </div>`;
+
+  // 指标网格
+  const cp = d.change_pct;
+  html += `<div class="grid">
+    <div class="mcard"><div class="lab">最新价</div><div class="val">¥${fmtNum(d.latest_price)}</div><div class="ext">昨收 ${fmtNum(d.prev_close)}</div></div>
+    <div class="mcard"><div class="lab">今日涨幅</div><div class="val ${pctClass(cp)}">${sign(cp)}${fmtNum(cp)}%</div><div class="ext">条件区间 2%~7%</div></div>
+    <div class="mcard"><div class="lab">成交额</div><div class="val">¥${fmtNum(d.amount_yi)}亿</div><div class="ext">量 ${fmtVol(today.volume)}</div></div>
+    <div class="mcard"><div class="lab">今开 / 最高</div><div class="val" style="font-size:16px">${fmtNum(today.open)} / ${fmtNum(today.high)}</div><div class="ext">最低 ${fmtNum(today.low)}</div></div>
+  </div>`;
+
+  // 信号
+  html += `<div class="signals">
+    <div class="sig"><div class="ico main">💰</div><div><div class="t">主力资金信号</div><div class="v">${d.signals.main_capital}</div></div></div>
+    <div class="sig"><div class="ico wash">🧹</div><div><div class="t">洗盘状态</div><div class="v">${d.signals.wash_status}</div></div></div>
+  </div>`;
+
+  // 五项条件
+  html += `<div class="sec-t">五项筛选条件（需同时满足）</div>`;
+  html += condCard('1', c.c1_price_range, '股价区间 5~100 元', '当前价 <b>¥'+fmtNum(d.latest_price)+'</b>，要求在 5~100 元之间，剔除低价股与高价股。');
+  html += condCard('2', c.c2_today_gain, '今日涨幅 2%~7%', '今日涨幅 <b>'+sign(cp)+fmtNum(cp)+'%</b>，要求温和上涨 2%~7%，排除涨停与弱势。');
+  html += condCard('3', c.c3_amount, '成交额 > 1 亿元', '今日成交额 <b>¥'+fmtNum(d.amount_yi)+'亿</b>，要求流动性充足、主力可介入。');
+  // 条件4 细节
+  let c4meta = '近5日放量天数 <b>'+c.c4_main_build.big_days+'/5</b>';
+  if(c.c4_main_build.cum_gain!=null) c4meta += ' · 5日累计涨幅 <b>'+fmtNum(c.c4_main_build.cum_gain)+'%</b>（需<5%）';
+  let c4pills = (c.c4_main_build.details||[]).map(x=>`<span class="pill ${x.big?'on':''}">${x.date.slice(5)} ${x.big?'放量':''}×${fmtNum(x.ratio,2)}</span>`).join('');
+  html += condCard('4', c.c4_main_build, '主力底部建仓痕迹', c4meta + '<div class="mini">'+c4pills+'</div>');
+  // 条件5 细节
+  let c5meta = '形态：<b>'+(c.c5_wash_end.pattern_type||'未出现')+'</b> · 今日收盘 <b>¥'+fmtNum(d.latest_price)+'</b> '+
+    (c.c5_wash_end.above_ma5?('> 5日均线 ¥'+fmtNum(c.c5_wash_end.ma5)+'（站上）'):('< 5日均线 ¥'+fmtNum(c.c5_wash_end.ma5)+'（未站上）'));
+  let c5pills = (c.c5_wash_end.details||[]).map(x=>`<span class="pill ${x.amp_ok?'on':''}">${x.date.slice(5)} 振幅${fmtNum(x.amplitude)}%</span>`).join('');
+  html += condCard('5', c.c5_wash_end, '洗盘结束·即将拉升', c5meta + '<div class="mini">'+c5pills+'</div>');
+
+  // 近10日K线
+  html += `<div class="sec-t">近 10 个交易日明细</div>`;
+  html += `<div class="tbl-wrap"><div class="tbl-scroll"><table>
+    <thead><tr><th class="l">日期</th><th>开</th><th>高</th><th>低</th><th>收</th><th>量</th><th>额(亿)</th></tr></thead><tbody>`;
+  d.recent.slice().reverse().forEach(b=>{
+    html += `<tr><td class="l">${b.date}</td><td>${fmtNum(b.open)}</td><td class="up">${fmtNum(b.high)}</td><td class="down">${fmtNum(b.low)}</td><td>${fmtNum(b.close)}</td><td>${fmtVol(b.volume)}</td><td>${fmtNum(b.amount_yi)}</td></tr>`;
+  });
+  html += `</tbody></table></div></div>`;
+
+  result.innerHTML = html;
+  result.classList.remove('hide');
+}
+
+function condCard(num, c, ttl, metaHtml){
+  const yes = c.pass;
+  return `<div class="cond">
+    <div class="ck ${yes?'yes':'no'}">${yes?'✓':'✕'}</div>
+    <div class="body">
+      <div class="num">条件 ${num}</div>
+      <div class="ttl">${ttl} ${yes?'<span style="color:var(--pass);font-size:12px">· 符合</span>':'<span style="color:var(--fail);font-size:12px">· 不符合</span>'}</div>
+      <div class="meta">${metaHtml}</div>
+    </div>
+  </div>`;
+}
+
+/* 初始化 */
+codeEl.focus();
+</script>
+</body>
+</html>
