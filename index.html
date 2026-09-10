@@ -21,17 +21,12 @@
     -webkit-font-smoothing:antialiased;padding-bottom:40px;
   }
   .wrap{max-width:880px;margin:0 auto;padding:0 16px}
-  /* 头部 */
   header{background:var(--grad);padding:26px 0 22px;text-align:center;position:relative;overflow:hidden}
   header::after{content:"";position:absolute;inset:0;background:radial-gradient(circle at 70% 0%,rgba(191,90,242,.18),transparent 55%)}
   .brand{font-size:22px;font-weight:800;letter-spacing:1px;position:relative}
   .brand .dot{color:var(--pass)}
   .sub-title{font-size:12px;color:var(--sub);margin-top:6px;position:relative}
   .badge-src{display:inline-block;margin-top:10px;font-size:11px;color:#7fe7c0;background:rgba(48,209,88,.12);border:1px solid rgba(48,209,88,.3);padding:3px 10px;border-radius:20px;position:relative}
-  /* 设置 */
-  .gear{position:absolute;top:16px;right:16px;width:34px;height:34px;border-radius:50%;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.15);color:#fff;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center}
-  .gear:active{transform:scale(.92)}
-  /* 输入区 */
   .search{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:16px;margin-top:-18px;position:relative;z-index:2;box-shadow:0 8px 30px rgba(0,0,0,.4)}
   .row{display:flex;gap:10px}
   .row input{flex:1;min-width:0;background:var(--card2);border:1px solid var(--border);color:var(--txt);font-size:16px;padding:13px 14px;border-radius:12px;outline:none}
@@ -43,14 +38,11 @@
   .quick{display:flex;flex-wrap:wrap;gap:7px;margin-top:12px}
   .quick span{font-size:12px;color:var(--sub);background:var(--card2);border:1px solid var(--border);padding:5px 11px;border-radius:20px;cursor:pointer}
   .quick span:active{background:#243046}
-  /* 状态 */
   .status{text-align:center;padding:30px 10px;color:var(--sub);font-size:14px}
   .spin{width:26px;height:26px;border:3px solid var(--border);border-top-color:var(--blue);border-radius:50%;animation:r .8s linear infinite;margin:0 auto 12px}
   @keyframes r{to{transform:rotate(360deg)}}
   .err{background:rgba(255,59,48,.1);border:1px solid rgba(255,59,48,.3);color:#ffb3ad;border-radius:12px;padding:14px;text-align:center;font-size:14px}
-  /* 结果 */
   .hide{display:none}
-  /* 综合结论 */
   .verdict{border-radius:16px;padding:18px 16px;margin-top:16px;text-align:center;border:1px solid var(--border)}
   .verdict.pass{background:linear-gradient(135deg,rgba(48,209,88,.18),rgba(48,209,88,.04));border-color:rgba(48,209,88,.4)}
   .verdict.fail{background:linear-gradient(135deg,rgba(138,148,166,.12),rgba(138,148,166,.03));border-color:rgba(138,148,166,.3)}
@@ -59,14 +51,12 @@
   .verdict.pass .v-text{color:var(--pass)}
   .verdict.fail .v-text{color:var(--fail)}
   .v-count{font-size:12px;color:var(--sub);margin-top:6px}
-  /* 指标卡片网格 */
   .grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-top:14px}
   .mcard{background:var(--card);border:1px solid var(--border);border-radius:13px;padding:13px 12px}
   .mcard .lab{font-size:11px;color:var(--muted)}
   .mcard .val{font-size:20px;font-weight:800;margin-top:3px}
   .mcard .ext{font-size:11px;color:var(--sub);margin-top:2px}
   .up{color:var(--up)} .down{color:var(--down)}
-  /* 信号条 */
   .signals{display:flex;flex-direction:column;gap:9px;margin-top:14px}
   .sig{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:12px 13px;display:flex;align-items:center;gap:11px}
   .sig .ico{width:34px;height:34px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0}
@@ -74,7 +64,6 @@
   .sig .ico.wash{background:rgba(255,159,10,.15);color:#ffbe43}
   .sig .t{font-size:12px;color:var(--muted)}
   .sig .v{font-size:13.5px;font-weight:600;margin-top:1px}
-  /* 条件列表 */
   .sec-t{font-size:13px;color:var(--sub);margin:20px 2px 10px;font-weight:600}
   .cond{background:var(--card);border:1px solid var(--border);border-radius:13px;padding:14px 13px;margin-bottom:10px;display:flex;gap:12px;align-items:flex-start}
   .cond .ck{width:24px;height:24px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800;margin-top:1px}
@@ -88,28 +77,13 @@
   .mini{display:flex;flex-wrap:wrap;gap:5px;margin-top:7px}
   .pill{font-size:11px;padding:3px 8px;border-radius:20px;border:1px solid var(--border);background:var(--card2);color:var(--sub)}
   .pill.on{color:#7fe7c0;border-color:rgba(48,209,88,.35);background:rgba(48,209,88,.08)}
-  /* K线表 */
   table{width:100%;border-collapse:collapse;font-size:12px;margin-top:6px}
   th,td{padding:7px 6px;text-align:right;border-bottom:1px solid var(--border)}
   th{color:var(--muted);font-weight:600;text-align:right;position:sticky;top:0;background:var(--card2)}
   td.l,th.l{text-align:left}
   .tbl-wrap{background:var(--card);border:1px solid var(--border);border-radius:13px;overflow:hidden;margin-top:8px}
   .tbl-scroll{max-height:280px;overflow:auto}
-  /* 设置面板 */
-  .overlay{position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:50;display:none;align-items:flex-end;justify-content:center}
-  .overlay.show{display:flex}
-  .sheet{background:var(--card);width:100%;max-width:880px;border-radius:18px 18px 0 0;padding:20px 18px 26px;animation:up .25s ease}
-  @keyframes up{from{transform:translateY(40px);opacity:.6}}
-  .sheet h3{margin:0 0 4px;font-size:16px}
-  .sheet p{margin:0 0 14px;color:var(--sub);font-size:12px}
-  .sheet label{font-size:12px;color:var(--sub);display:block;margin-bottom:6px}
-  .sheet input{width:100%;background:var(--card2);border:1px solid var(--border);color:var(--txt);font-size:14px;padding:11px;border-radius:10px;outline:none;font-family:inherit}
-  .sheet .btns{display:flex;gap:10px;margin-top:16px}
-  .sheet button{flex:1;padding:12px;border-radius:10px;border:none;font-size:14px;font-weight:600;cursor:pointer}
-  .btn-sv{background:linear-gradient(135deg,#0a84ff,#bf5af2);color:#fff}
-  .btn-cl{background:var(--card2);color:var(--sub);border:1px solid var(--border)}
   .foot{text-align:center;color:var(--muted);font-size:11px;margin-top:26px;line-height:1.7}
-  .foot a{color:var(--sub)}
   @media (min-width:560px){
     .grid{grid-template-columns:repeat(4,1fr)}
     .brand{font-size:26px}
@@ -118,14 +92,12 @@
 </head>
 <body>
 <header>
-  <div class="gear" id="gearBtn" title="后端地址设置">⚙</div>
   <div class="brand">A股智能选股 <span class="dot">·</span> 主力信号</div>
   <div class="sub-title">主力底部建仓 + 洗盘结束 五条件联动筛选</div>
-  <div class="badge-src">数据源：AKShare（实时行情）</div>
+  <div class="badge-src">数据源：腾讯行情（实时）</div>
 </header>
 
 <div class="wrap">
-  <!-- 搜索 -->
   <div class="search">
     <div class="row">
       <input id="code" inputmode="numeric" placeholder="输入股票代码，如 000001 或 600519" />
@@ -140,153 +112,260 @@
     </div>
   </div>
 
-  <!-- 状态区 -->
   <div id="statusBox"></div>
-
-  <!-- 结果区 -->
   <div id="result" class="hide"></div>
 
   <div class="foot">
     本工具基于公开行情数据，通过量价形态识别主力建仓与洗盘痕迹，<br/>
-    仅供学习研究参考，不构成任何投资建议。股市有风险，入市需谨慎。<br/>
-    © AKShare · 单文件前端 + Flask 后端
-  </div>
-</div>
-
-<!-- 设置面板 -->
-<div class="overlay" id="overlay">
-  <div class="sheet">
-    <h3>后端地址设置</h3>
-    <p>本地直接打开 HTML 时默认连接本机 5000 端口；部署到服务器后请填写你的 HTTPS 接口地址（微信内打开需 HTTPS）。</p>
-    <label>接口地址（留空则同源）</label>
-    <input id="apiInput" placeholder="如 https://your-domain.com" />
-    <div class="btns">
-      <button class="btn-cl" id="closeSheet">取消</button>
-      <button class="btn-sv" id="saveSheet">保存</button>
-    </div>
+    仅供学习研究参考，不构成任何投资建议。股市有风险，入市需谨慎。
   </div>
 </div>
 
 <script>
-/* ====== 接口地址配置 ====== */
-function defaultBase(){
-  // 本地 file:// 或 localhost 访问时用本机后端；部署后用同源
-  if(location.protocol === 'file:' || location.hostname === 'localhost' || location.hostname === '127.0.0.1'){
-    return 'http://localhost:5000';
-  }
-  return ''; // 同源
-}
-let API_BASE = localStorage.getItem('api_base') || defaultBase();
+/* ============================================================
+   纯前端 A股智能选股 —— 直接请求腾讯行情接口（支持CORS）
+   无需后端，可部署到任意静态托管平台，微信内可直接打开
+   ============================================================ */
 
 const $ = id => document.getElementById(id);
 const codeEl = $('code'), goBtn = $('goBtn'), statusBox = $('statusBox'), result = $('result');
 
-/* ====== 事件 ====== */
 goBtn.addEventListener('click', doAnalyze);
 codeEl.addEventListener('keydown', e=>{ if(e.key==='Enter') doAnalyze(); });
 document.querySelectorAll('.quick span').forEach(s=>{
   s.addEventListener('click', ()=>{ codeEl.value = s.dataset.c; doAnalyze(); });
 });
-$('gearBtn').addEventListener('click', ()=>{ $('apiInput').value = API_BASE; $('overlay').classList.add('show'); });
-$('closeSheet').addEventListener('click', ()=> $('overlay').classList.remove('show'));
-$('saveSheet').addEventListener('click', ()=>{
-  let v = $('apiInput').value.trim();
-  API_BASE = v; localStorage.setItem('api_base', v);
-  $('overlay').classList.remove('show');
-});
 
-/* ====== 主流程 ====== */
+/* ---------- 工具函数 ---------- */
+function normalizeSymbol(code){
+  code = (code||'').trim().toLowerCase();
+  if(code.startsWith('sh')||code.startsWith('sz')||code.startsWith('bj')) return code;
+  const digits = code.replace(/\D/g,'');
+  if(!digits) return '';
+  const head = digits[0];
+  if(head==='6' || digits.startsWith('688') || digits.startsWith('9')) return 'sh'+digits;
+  if(head==='0' || head==='3') return 'sz'+digits;
+  if(head==='4' || head==='8') return 'bj'+digits;
+  return 'sz'+digits;
+}
+
+function fmtNum(v,d=2){ if(v==null||v===undefined||isNaN(v)) return '--'; return Number(v).toFixed(d); }
+function fmtVol(v){ v=Number(v)||0; if(v>=1e8) return (v/1e8).toFixed(2)+'亿'; if(v>=1e4) return (v/1e4).toFixed(2)+'万'; return Math.round(v); }
+function pctClass(p){ return p>0?'up':(p<0?'down':''); }
+function sign(p){ return p>0?'+':''; }
+
+/* 腾讯行情返回 GBK 编码，需用 TextDecoder 解码 */
+async function fetchGBK(url){
+  const res = await fetch(url);
+  const buf = await res.arrayBuffer();
+  return new TextDecoder('gbk').decode(buf);
+}
+
+/* ---------- 数据获取 ---------- */
+// 实时行情：返回 {name,price,prevClose,open,high,low,volume(股),amount(元),changePct}
+async function fetchRealtime(symbol){
+  const text = await fetchGBK('https://qt.gtimg.cn/q='+symbol);
+  // text 形如: v_sz000001="51~名称~000001~最新价~昨收~今开~量(手)~..."
+  const m = text.match(/"([^"]*)"/);
+  if(!m) throw new Error('实时行情解析失败');
+  const f = m[1].split('~');
+  return {
+    name: f[1],
+    price: parseFloat(f[3]),
+    prevClose: parseFloat(f[4]),
+    open: parseFloat(f[5]),
+    volume: parseFloat(f[6]) * 100,      // 手 → 股
+    high: parseFloat(f[33]),
+    low: parseFloat(f[34]),
+    amount: parseFloat(f[37]) * 10000,    // 万 → 元
+    changePct: parseFloat(f[32]),
+    date: f[30] ? f[30].slice(0,8).replace(/(\d{4})(\d{2})(\d{2})/,'$1-$2-$3') : ''
+  };
+}
+
+// 历史日K线（前复权）：返回 [{date,open,close,high,low,volume(股),amount(元)}]
+async function fetchKline(symbol, days=90){
+  const today = new Date();
+  const end = today.toISOString().slice(0,10);
+  const start = new Date(today.getTime() - days*2*86400000).toISOString().slice(0,10);
+  const url = `https://web.ifzq.gtimg.cn/appstock/app/fqkline/get?param=${symbol},day,${start},${end},${days},qfq`;
+  const res = await fetch(url);
+  const json = await res.json();
+  const arr = (json.data && json.data[symbol] && (json.data[symbol].qfqday || json.data[symbol].day)) || [];
+  return arr.map(item=>{
+    const [date,open,close,high,low,volHand] = item;
+    const volume = parseFloat(volHand)*100; // 手→股
+    const o = parseFloat(open), c = parseFloat(close);
+    const amount = volume * (o+c)/2;        // 历史成交额估算
+    return {date, open:o, close:c, high:parseFloat(high), low:parseFloat(low), volume, amount};
+  });
+}
+
+/* ---------- 五项条件分析 ---------- */
+function analyze(bars, rt){
+  const n = bars.length;
+  const today = bars[n-1];
+  const prev = bars[n-2];
+  const latest = rt.price;
+  const prevClose = rt.prevClose;
+  const changePct = rt.changePct;
+  const amountYi = rt.amount / 1e8;
+
+  // 条件1：股价 5~100
+  const c1 = latest >= 5 && latest <= 100;
+  // 条件2：涨幅 2%~7%
+  const c2 = changePct >= 2 && changePct <= 7;
+  // 条件3：成交额 > 1亿
+  const c3 = rt.amount > 1e8;
+
+  // 条件4：近5日主力建仓
+  let c4=false, c4Big=0, c4Details=[], c4Gain=null;
+  if(n >= 16){
+    const win = bars.slice(-5);
+    c4Gain = (win[4].close - win[0].close)/win[0].close*100;
+    const startIdx = n-5;
+    for(let i=0;i<5;i++){
+      const abs = startIdx+i;
+      const prev10 = bars.slice(abs-10, abs);
+      if(prev10.length===10){
+        const avg10 = prev10.reduce((s,b)=>s+b.volume,0)/10;
+        const big = avg10>0 && win[i].volume > avg10*1.3;
+        if(big) c4Big++;
+        c4Details.push({date:win[i].date, vol:win[i].volume, avg10, ratio: avg10>0?win[i].volume/avg10:0, big});
+      }
+    }
+    c4 = c4Big>=3 && c4Gain<5;
+  }
+
+  // 条件5：近3日洗盘结束 + 站上5日线
+  let c5=false, c5Pattern=false, c5PatType='', c5Above=false, c5Ma5=null, c5Detail=[];
+  if(n >= 5){
+    c5Ma5 = bars.slice(-5).reduce((s,b)=>s+b.close,0)/5;
+    c5Above = latest > c5Ma5;
+    const last3 = bars.slice(-3);
+    let ampAll=true, shrink=true;
+    for(let i=0;i<3;i++){
+      const pc = i>0 ? last3[i-1].close : last3[i].open;
+      const amp = pc>0 ? (last3[i].high-last3[i].low)/pc*100 : 0;
+      const ampOk = amp < 3;
+      if(!ampOk) ampAll=false;
+      c5Detail.push({date:last3[i].date, amplitude:amp, ampOk, vol:last3[i].volume});
+    }
+    const vols = last3.map(b=>b.volume);
+    shrink = vols[0]>vols[1] && vols[1]>vols[2];
+    const sideways = ampAll && shrink;
+
+    let shadowDay=null;
+    for(const b of last3){
+      const body = Math.abs(b.close-b.open);
+      const lower = Math.min(b.open,b.close)-b.low;
+      const isLong = lower >= 0.02*b.close && (body>0 ? lower>2*body : lower>0.01*b.close);
+      if(isLong){ shadowDay=b.date; break; }
+    }
+    if(shadowDay){ c5Pattern=true; c5PatType='长下影线（'+shadowDay+'）'; }
+    else if(sideways){ c5Pattern=true; c5PatType='缩量横盘（振幅<3%、量持续萎缩）'; }
+    c5 = c5Pattern && c5Above;
+  }
+
+  const allPass = c1 && c2 && c3 && c4 && c5;
+  const mainSignal = c4 ? `主力建仓信号（5日内放量${c4Big}天且未大涨）`
+                    : c4Big>0 ? `温和放量（${c4Big}/5 天放量）` : '无明显放量';
+  const washStatus = c5Pattern&&c5Above ? '洗盘结束，可能即将拉升'
+                   : c5Pattern ? '出现洗盘形态，但未站上5日线'
+                   : c5Above ? '站上5日线，但未见明显洗盘形态' : '仍在洗盘/调整中';
+
+  return {
+    symbol: '', name: rt.name,
+    latest_price: latest, prev_close: prevClose, change_pct: changePct, amount_yi: amountYi,
+    today: {date: rt.date || today.date, open:rt.open, high:rt.high, low:rt.low, close:latest, volume:rt.volume, amount:rt.amount},
+    conditions:{
+      c1_price_range:{pass:c1, desc:'股价 5~100 元', value:latest},
+      c2_today_gain:{pass:c2, desc:'今日涨幅 2%~7%', value:changePct},
+      c3_amount:{pass:c3, desc:'成交额 > 1 亿元', value:amountYi},
+      c4_main_build:{pass:c4, desc:'近5日主力建仓', big_days:c4Big, cum_gain:c4Gain, details:c4Details},
+      c5_wash_end:{pass:c5, desc:'近3日洗盘结束+站上5日线', pattern:c5Pattern, pattern_type:c5PatType, above_ma5:c5Above, ma5:c5Ma5, details:c5Detail},
+      all_pass: allPass
+    },
+    signals:{main_capital:mainSignal, wash_status:washStatus},
+    recent: bars.slice(-10).map(b=>({date:b.date, open:b.open, high:b.high, low:b.low, close:b.close, volume:b.volume, amount_yi:b.amount/1e8}))
+  };
+}
+
+/* ---------- 主流程 ---------- */
 async function doAnalyze(){
   const code = codeEl.value.trim();
   if(!code){ showToast('请输入股票代码'); return; }
-  setLoading('正在获取 ' + code + ' 的行情数据并分析…');
+  const symbol = normalizeSymbol(code);
+  if(!symbol){ showToast('无法识别的股票代码'); return; }
+  setLoading('正在获取 '+symbol+' 的行情数据并分析…');
   result.classList.add('hide');
   goBtn.disabled = true;
   try{
-    const url = (API_BASE||'') + '/api/analyze?code=' + encodeURIComponent(code) + '&_t=' + Date.now();
-    const res = await fetch(url);
-    const data = await res.json();
-    if(!data.ok){ setError(data.msg || '查询失败'); return; }
-    render(data, code);
+    const [rt, bars] = await Promise.all([fetchRealtime(symbol), fetchKline(symbol, 90)]);
+    if(!bars || bars.length < 16) throw new Error('K线数据不足，请检查股票代码');
+    const data = analyze(bars, rt);
+    data.symbol = symbol;
+    render(data);
   }catch(e){
-    setError('网络或后端连接失败：' + e.message + '<br/>请确认后端已启动，或点右上角 ⚙ 设置正确的接口地址。');
+    setError('查询失败：'+e.message+'<br/>请检查股票代码是否正确，或稍后重试。');
   }finally{
     goBtn.disabled = false;
   }
 }
 
-function setLoading(txt){
-  statusBox.innerHTML = '<div class="status"><div class="spin"></div>'+txt+'</div>';
-}
-function setError(txt){
-  statusBox.innerHTML = '<div class="err">'+txt+'</div>';
-}
-function showToast(txt){
-  statusBox.innerHTML = '<div class="err" style="background:rgba(255,159,10,.1);border-color:rgba(255,159,10,.3);color:#ffbe43">'+txt+'</div>';
-}
+function setLoading(txt){ statusBox.innerHTML='<div class="status"><div class="spin"></div>'+txt+'</div>'; }
+function setError(txt){ statusBox.innerHTML='<div class="err">'+txt+'</div>'; }
+function showToast(txt){ statusBox.innerHTML='<div class="err" style="background:rgba(255,159,10,.1);border-color:rgba(255,159,10,.3);color:#ffbe43">'+txt+'</div>'; }
 
-/* ====== 渲染 ====== */
-function fmtNum(v,d=2){ if(v==null||v===undefined||isNaN(v)) return '--'; return Number(v).toFixed(d); }
-function fmtVol(v){ v=Number(v)||0; if(v>=1e8) return (v/1e8).toFixed(2)+'亿'; if(v>=1e4) return (v/1e4).toFixed(2)+'万'; return v; }
-function pctClass(p){ return p>0?'up':(p<0?'down':''); }
-function sign(p){ return p>0?'+':''; }
-
-function render(d, code){
-  statusBox.innerHTML = '';
+/* ---------- 渲染 ---------- */
+function render(d){
+  statusBox.innerHTML='';
   const c = d.conditions;
-  const today = d.today;
+  const t = d.today;
   const passCount = [c.c1_price_range,c.c2_today_gain,c.c3_amount,c.c4_main_build,c.c5_wash_end].filter(x=>x.pass).length;
   const allPass = c.all_pass;
+  const cp = d.change_pct;
 
-  let html = '';
-  // 综合结论
-  html += `<div class="verdict ${allPass?'pass':'fail'}">
-    <div class="v-label">综合结论 · ${d.symbol}</div>
+  let h = `<div class="verdict ${allPass?'pass':'fail'}">
+    <div class="v-label">综合结论 · ${d.symbol} ${d.name||''}</div>
     <div class="v-text">${allPass?'✓ 符合全部五项条件':'未全部符合'}</div>
-    <div class="v-count">${passCount}/5 项条件通过 · ${today.date}</div>
+    <div class="v-count">${passCount}/5 项条件通过 · ${t.date}</div>
   </div>`;
 
-  // 指标网格
-  const cp = d.change_pct;
-  html += `<div class="grid">
+  h += `<div class="grid">
     <div class="mcard"><div class="lab">最新价</div><div class="val">¥${fmtNum(d.latest_price)}</div><div class="ext">昨收 ${fmtNum(d.prev_close)}</div></div>
     <div class="mcard"><div class="lab">今日涨幅</div><div class="val ${pctClass(cp)}">${sign(cp)}${fmtNum(cp)}%</div><div class="ext">条件区间 2%~7%</div></div>
-    <div class="mcard"><div class="lab">成交额</div><div class="val">¥${fmtNum(d.amount_yi)}亿</div><div class="ext">量 ${fmtVol(today.volume)}</div></div>
-    <div class="mcard"><div class="lab">今开 / 最高</div><div class="val" style="font-size:16px">${fmtNum(today.open)} / ${fmtNum(today.high)}</div><div class="ext">最低 ${fmtNum(today.low)}</div></div>
+    <div class="mcard"><div class="lab">成交额</div><div class="val">¥${fmtNum(d.amount_yi)}亿</div><div class="ext">量 ${fmtVol(t.volume)}</div></div>
+    <div class="mcard"><div class="lab">今开 / 最高</div><div class="val" style="font-size:16px">${fmtNum(t.open)} / ${fmtNum(t.high)}</div><div class="ext">最低 ${fmtNum(t.low)}</div></div>
   </div>`;
 
-  // 信号
-  html += `<div class="signals">
+  h += `<div class="signals">
     <div class="sig"><div class="ico main">💰</div><div><div class="t">主力资金信号</div><div class="v">${d.signals.main_capital}</div></div></div>
     <div class="sig"><div class="ico wash">🧹</div><div><div class="t">洗盘状态</div><div class="v">${d.signals.wash_status}</div></div></div>
   </div>`;
 
-  // 五项条件
-  html += `<div class="sec-t">五项筛选条件（需同时满足）</div>`;
-  html += condCard('1', c.c1_price_range, '股价区间 5~100 元', '当前价 <b>¥'+fmtNum(d.latest_price)+'</b>，要求在 5~100 元之间，剔除低价股与高价股。');
-  html += condCard('2', c.c2_today_gain, '今日涨幅 2%~7%', '今日涨幅 <b>'+sign(cp)+fmtNum(cp)+'%</b>，要求温和上涨 2%~7%，排除涨停与弱势。');
-  html += condCard('3', c.c3_amount, '成交额 > 1 亿元', '今日成交额 <b>¥'+fmtNum(d.amount_yi)+'亿</b>，要求流动性充足、主力可介入。');
-  // 条件4 细节
-  let c4meta = '近5日放量天数 <b>'+c.c4_main_build.big_days+'/5</b>';
-  if(c.c4_main_build.cum_gain!=null) c4meta += ' · 5日累计涨幅 <b>'+fmtNum(c.c4_main_build.cum_gain)+'%</b>（需<5%）';
+  h += `<div class="sec-t">五项筛选条件（需同时满足）</div>`;
+  h += condCard('1', c.c1_price_range, '股价区间 5~100 元', `当前价 <b>¥${fmtNum(d.latest_price)}</b>，要求在 5~100 元之间，剔除低价股与高价股。`);
+  h += condCard('2', c.c2_today_gain, '今日涨幅 2%~7%', `今日涨幅 <b>${sign(cp)}${fmtNum(cp)}%</b>，要求温和上涨 2%~7%，排除涨停与弱势。`);
+  h += condCard('3', c.c3_amount, '成交额 > 1 亿元', `今日成交额 <b>¥${fmtNum(d.amount_yi)}亿</b>，要求流动性充足、主力可介入。`);
+  let c4meta = `近5日放量天数 <b>${c.c4_main_build.big_days}/5</b>`;
+  if(c.c4_main_build.cum_gain!=null) c4meta += ` · 5日累计涨幅 <b>${fmtNum(c.c4_main_build.cum_gain)}%</b>（需<5%）`;
   let c4pills = (c.c4_main_build.details||[]).map(x=>`<span class="pill ${x.big?'on':''}">${x.date.slice(5)} ${x.big?'放量':''}×${fmtNum(x.ratio,2)}</span>`).join('');
-  html += condCard('4', c.c4_main_build, '主力底部建仓痕迹', c4meta + '<div class="mini">'+c4pills+'</div>');
-  // 条件5 细节
-  let c5meta = '形态：<b>'+(c.c5_wash_end.pattern_type||'未出现')+'</b> · 今日收盘 <b>¥'+fmtNum(d.latest_price)+'</b> '+
-    (c.c5_wash_end.above_ma5?('> 5日均线 ¥'+fmtNum(c.c5_wash_end.ma5)+'（站上）'):('< 5日均线 ¥'+fmtNum(c.c5_wash_end.ma5)+'（未站上）'));
+  h += condCard('4', c.c4_main_build, '主力底部建仓痕迹', c4meta+'<div class="mini">'+c4pills+'</div>');
+  let c5meta = `形态：<b>${c.c5_wash_end.pattern_type||'未出现'}</b> · 今日收盘 <b>¥${fmtNum(d.latest_price)}</b> ` +
+    (c.c5_wash_end.above_ma5?`> 5日均线 ¥${fmtNum(c.c5_wash_end.ma5)}（站上）`:`< 5日均线 ¥${fmtNum(c.c5_wash_end.ma5)}（未站上）`);
   let c5pills = (c.c5_wash_end.details||[]).map(x=>`<span class="pill ${x.amp_ok?'on':''}">${x.date.slice(5)} 振幅${fmtNum(x.amplitude)}%</span>`).join('');
-  html += condCard('5', c.c5_wash_end, '洗盘结束·即将拉升', c5meta + '<div class="mini">'+c5pills+'</div>');
+  h += condCard('5', c.c5_wash_end, '洗盘结束·即将拉升', c5meta+'<div class="mini">'+c5pills+'</div>');
 
-  // 近10日K线
-  html += `<div class="sec-t">近 10 个交易日明细</div>`;
-  html += `<div class="tbl-wrap"><div class="tbl-scroll"><table>
+  h += `<div class="sec-t">近 10 个交易日明细</div>`;
+  h += `<div class="tbl-wrap"><div class="tbl-scroll"><table>
     <thead><tr><th class="l">日期</th><th>开</th><th>高</th><th>低</th><th>收</th><th>量</th><th>额(亿)</th></tr></thead><tbody>`;
   d.recent.slice().reverse().forEach(b=>{
-    html += `<tr><td class="l">${b.date}</td><td>${fmtNum(b.open)}</td><td class="up">${fmtNum(b.high)}</td><td class="down">${fmtNum(b.low)}</td><td>${fmtNum(b.close)}</td><td>${fmtVol(b.volume)}</td><td>${fmtNum(b.amount_yi)}</td></tr>`;
+    h += `<tr><td class="l">${b.date}</td><td>${fmtNum(b.open)}</td><td class="up">${fmtNum(b.high)}</td><td class="down">${fmtNum(b.low)}</td><td>${fmtNum(b.close)}</td><td>${fmtVol(b.volume)}</td><td>${fmtNum(b.amount_yi)}</td></tr>`;
   });
-  html += `</tbody></table></div></div>`;
+  h += `</tbody></table></div></div>`;
 
-  result.innerHTML = html;
+  result.innerHTML = h;
   result.classList.remove('hide');
 }
 
@@ -302,7 +381,6 @@ function condCard(num, c, ttl, metaHtml){
   </div>`;
 }
 
-/* 初始化 */
 codeEl.focus();
 </script>
 </body>
