@@ -1,0 +1,734 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="format-detection" content="telephone=no">
+<title>A股智能选股 · 主力建仓洗盘识别</title>
+<style>
+:root{
+  --bg:#0f1419;
+  --bg2:#1a1f2e;
+  --card:#1e2433;
+  --card2:#252b3d;
+  --border:#2d3548;
+  --text:#e8eaed;
+  --text2:#9aa4b2;
+  --text3:#6b7280;
+  --red:#ef4444;
+  --green:#22c55e;
+  --gold:#f59e0b;
+  --blue:#3b82f6;
+  --purple:#a855f7;
+  --shadow:0 4px 24px rgba(0,0,0,.3);
+}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei","Helvetica Neue",Arial,sans-serif;line-height:1.5;min-height:100vh}
+body{
+  background:
+    radial-gradient(circle at 20% 0%,rgba(59,130,246,.08),transparent 40%),
+    radial-gradient(circle at 80% 0%,rgba(168,85,247,.08),transparent 40%),
+    var(--bg);
+  padding-bottom:40px;
+}
+.container{max-width:720px;margin:0 auto;padding:16px}
+/* Header */
+.header{text-align:center;padding:24px 16px 16px}
+.header h1{font-size:22px;font-weight:700;background:linear-gradient(135deg,#60a5fa,#a855f7);-webkit-background-clip:text;background-clip:text;color:transparent;letter-spacing:1px}
+.header p{font-size:12px;color:var(--text3);margin-top:6px}
+/* Input Card */
+.input-card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:18px;margin-bottom:16px;box-shadow:var(--shadow)}
+.input-row{display:flex;gap:10px;align-items:center}
+.input-wrap{flex:1;position:relative}
+.input-wrap input{
+  width:100%;height:46px;background:var(--bg2);border:1.5px solid var(--border);border-radius:12px;
+  color:var(--text);font-size:17px;font-weight:600;padding:0 14px;outline:none;transition:.2s;
+  letter-spacing:2px;text-align:center;
+}
+.input-wrap input:focus{border-color:var(--blue)}
+.input-wrap input::placeholder{color:var(--text3);letter-spacing:1px;font-weight:400;font-size:14px}
+.btn{
+  height:46px;padding:0 20px;border:none;border-radius:12px;font-size:15px;font-weight:600;
+  cursor:pointer;transition:.2s;white-space:nowrap;display:inline-flex;align-items:center;gap:6px;
+}
+.btn-primary{background:linear-gradient(135deg,#3b82f6,#6366f1);color:#fff}
+.btn-primary:active{transform:scale(.97)}
+.btn-primary:disabled{opacity:.5;cursor:not-allowed}
+.btn-ghost{background:var(--bg2);color:var(--text2);border:1px solid var(--border)}
+.api-key-row{margin-top:12px;display:none}
+.api-key-row.show{display:block}
+.api-key-row input{
+  width:100%;height:38px;background:var(--bg2);border:1px solid var(--border);border-radius:10px;
+  color:var(--text2);font-size:12px;padding:0 12px;outline:none;
+}
+.toggle-api{margin-top:10px;font-size:12px;color:var(--text3);cursor:pointer;user-select:none;display:flex;align-items:center;gap:4px}
+.toggle-api:hover{color:var(--text2)}
+.hint{font-size:11px;color:var(--text3);margin-top:10px;line-height:1.6}
+.hint b{color:var(--gold)}
+/* Loading */
+.loading{display:none;text-align:center;padding:40px 20px}
+.loading.show{display:block}
+.spinner{width:36px;height:36px;border:3px solid var(--border);border-top-color:var(--blue);border-radius:50%;animation:spin .8s linear infinite;margin:0 auto 12px}
+@keyframes spin{to{transform:rotate(360deg)}}
+.loading-text{font-size:14px;color:var(--text2)}
+.loading-text span{display:block;font-size:12px;color:var(--text3);margin-top:4px}
+/* Stock Card */
+.stock-card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:18px;margin-bottom:14px;box-shadow:var(--shadow);display:none}
+.stock-card.show{display:block;animation:fadeUp .4s ease}
+@keyframes fadeUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+.stock-head{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:14px}
+.stock-name{font-size:20px;font-weight:700}
+.stock-code{font-size:13px;color:var(--text3);margin-top:2px}
+.price-block{text-align:right}
+.price{font-size:28px;font-weight:700;line-height:1}
+.price.up{color:var(--red)}
+.price.down{color:var(--green)}
+.change{font-size:13px;margin-top:4px;font-weight:600}
+.change.up{color:var(--red)}
+.change.down{color:var(--green)}
+.metrics{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:14px;padding-top:14px;border-top:1px solid var(--border)}
+.metric{text-align:center}
+.metric-label{font-size:11px;color:var(--text3);margin-bottom:4px}
+.metric-value{font-size:14px;font-weight:600;color:var(--text)}
+/* Verdict */
+.verdict{border-radius:14px;padding:16px;margin-bottom:14px;display:none}
+.verdict.show{display:block;animation:fadeUp .4s ease}
+.verdict.pass{background:linear-gradient(135deg,rgba(34,197,94,.15),rgba(34,197,94,.05));border:1px solid rgba(34,197,94,.3)}
+.verdict.fail{background:linear-gradient(135deg,rgba(239,68,68,.12),rgba(239,68,68,.04));border:1px solid rgba(239,68,68,.25)}
+.verdict-title{font-size:16px;font-weight:700;margin-bottom:6px}
+.verdict.pass .verdict-title{color:var(--green)}
+.verdict.fail .verdict-title{color:var(--red)}
+.verdict-desc{font-size:13px;color:var(--text2);line-height:1.6}
+/* Condition List */
+.cond-section{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:18px;margin-bottom:14px;box-shadow:var(--shadow);display:none}
+.cond-section.show{display:block;animation:fadeUp .4s ease}
+.section-title{font-size:15px;font-weight:700;margin-bottom:14px;display:flex;align-items:center;gap:8px}
+.section-title .badge{font-size:11px;font-weight:600;padding:2px 8px;border-radius:6px;background:var(--bg2);color:var(--text2)}
+.cond-item{padding:12px;border-radius:10px;margin-bottom:8px;border:1px solid var(--border);background:var(--bg2);transition:.2s}
+.cond-item:last-child{margin-bottom:0}
+.cond-item.pass{border-color:rgba(34,197,94,.3);background:rgba(34,197,94,.04)}
+.cond-item.fail{border-color:rgba(239,68,68,.2);background:rgba(239,68,68,.03)}
+.cond-head{display:flex;justify-content:space-between;align-items:center;gap:10px}
+.cond-num{width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0;background:var(--card2);color:var(--text2)}
+.cond-item.pass .cond-num{background:var(--green);color:#fff}
+.cond-item.fail .cond-num{background:var(--red);color:#fff}
+.cond-name{flex:1;font-size:14px;font-weight:600}
+.cond-status{font-size:12px;font-weight:600;padding:3px 10px;border-radius:6px;white-space:nowrap}
+.cond-item.pass .cond-status{background:rgba(34,197,94,.15);color:var(--green)}
+.cond-item.fail .cond-status{background:rgba(239,68,68,.12);color:var(--red)}
+.cond-detail{font-size:12px;color:var(--text2);margin-top:8px;padding-top:8px;border-top:1px solid rgba(255,255,255,.04);line-height:1.7;display:none}
+.cond-item.open .cond-detail{display:block}
+.cond-detail b{color:var(--text)}
+.cond-toggle{font-size:11px;color:var(--text3);cursor:pointer;margin-top:6px;user-select:none}
+/* Signal Cards */
+.signal-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px;display:none}
+.signal-grid.show{display:grid;animation:fadeUp .4s ease}
+.signal-card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:14px;box-shadow:var(--shadow)}
+.signal-card .s-label{font-size:12px;color:var(--text3);margin-bottom:6px}
+.signal-card .s-value{font-size:15px;font-weight:700;margin-bottom:4px}
+.signal-card .s-desc{font-size:11px;color:var(--text2);line-height:1.5}
+.s-value.strong{color:var(--gold)}
+.s-value.medium{color:var(--blue)}
+.s-value.weak{color:var(--text3)}
+.s-value.yes{color:var(--green)}
+.s-value.no{color:var(--red)}
+/* Error */
+.error{background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.25);border-radius:12px;padding:14px;color:var(--red);font-size:13px;margin-bottom:14px;display:none}
+.error.show{display:block;animation:fadeUp .3s ease}
+/* Footer */
+.footer{text-align:center;padding:20px 16px;font-size:11px;color:var(--text3);line-height:1.8}
+.footer a{color:var(--blue);text-decoration:none}
+/* Quick chips */
+.chips{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+.chip{font-size:11px;padding:5px 10px;background:var(--bg2);border:1px solid var(--border);border-radius:20px;color:var(--text2);cursor:pointer;transition:.2s}
+.chip:active{transform:scale(.95);background:var(--card2)}
+/* K-line mini chart */
+.kline-card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:18px;margin-bottom:14px;box-shadow:var(--shadow);display:none}
+.kline-card.show{display:block;animation:fadeUp .4s ease}
+#klineCanvas{width:100%;height:120px;display:block}
+.kline-info{display:flex;justify-content:space-between;font-size:11px;color:var(--text3);margin-top:8px}
+@media(max-width:480px){
+  .container{padding:12px}
+  .header h1{font-size:20px}
+  .price{font-size:24px}
+  .metrics{grid-template-columns:repeat(3,1fr);gap:6px}
+  .metric-value{font-size:13px}
+  .signal-grid{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="header">
+    <h1>A股智能选股</h1>
+    <p>主力建仓 · 洗盘结束 · 即将拉升识别</p>
+  </div>
+
+  <div class="input-card">
+    <div class="input-row">
+      <div class="input-wrap">
+        <input type="text" id="stockCode" placeholder="输入股票代码 如 000001 / 600519" maxlength="6" inputmode="numeric">
+      </div>
+      <button class="btn btn-primary" id="analyzeBtn">开始分析</button>
+    </div>
+    <div class="chips">
+      <span class="chip" data-code="000001">平安银行</span>
+      <span class="chip" data-code="600519">贵州茅台</span>
+      <span class="chip" data-code="300750">宁德时代</span>
+      <span class="chip" data-code="002594">比亚迪</span>
+    </div>
+    <div class="toggle-api" id="toggleApi">⚙️ 使用 TickFlow API Key（可选）</div>
+    <div class="api-key-row" id="apiKeyRow">
+      <input type="text" id="apiKey" placeholder="输入 TickFlow API Key（留空则使用免费数据源）">
+    </div>
+    <div class="hint">
+      数据源：<b>腾讯行情公开接口</b>（免费，无需注册）<br>
+      可选：输入 TickFlow API Key 获取更稳定高质量数据<br>
+      ⚠️ 仅供学习研究，不构成投资建议
+    </div>
+  </div>
+
+  <div class="loading" id="loading">
+    <div class="spinner"></div>
+    <div class="loading-text" id="loadingText">正在获取行情数据...<span>请稍候</span></div>
+  </div>
+
+  <div class="error" id="errorBox"></div>
+
+  <div class="stock-card" id="stockCard">
+    <div class="stock-head">
+      <div>
+        <div class="stock-name" id="stockName">--</div>
+        <div class="stock-code" id="stockCodeDisp">--</div>
+      </div>
+      <div class="price-block">
+        <div class="price" id="stockPrice">--</div>
+        <div class="change" id="stockChange">--</div>
+      </div>
+    </div>
+    <div class="metrics">
+      <div class="metric"><div class="metric-label">今开</div><div class="metric-value" id="mOpen">--</div></div>
+      <div class="metric"><div class="metric-label">最高</div><div class="metric-value" id="mHigh">--</div></div>
+      <div class="metric"><div class="metric-label">最低</div><div class="metric-value" id="mLow">--</div></div>
+      <div class="metric"><div class="metric-label">成交额</div><div class="metric-value" id="mAmount">--</div></div>
+      <div class="metric"><div class="metric-label">换手率</div><div class="metric-value" id="mTurnover">--</div></div>
+      <div class="metric"><div class="metric-label">振幅</div><div class="metric-value" id="mAmp">--</div></div>
+    </div>
+  </div>
+
+  <div class="kline-card" id="klineCard">
+    <div class="section-title">近15日K线走势</div>
+    <canvas id="klineCanvas"></canvas>
+    <div class="kline-info"><span id="klineStart">--</span><span id="klineEnd">--</span></div>
+  </div>
+
+  <div class="verdict" id="verdict">
+    <div class="verdict-title" id="verdictTitle">--</div>
+    <div class="verdict-desc" id="verdictDesc">--</div>
+  </div>
+
+  <div class="signal-grid" id="signalGrid">
+    <div class="signal-card">
+      <div class="s-label">主力资金信号</div>
+      <div class="s-value" id="sMain">--</div>
+      <div class="s-desc" id="sMainDesc">--</div>
+    </div>
+    <div class="signal-card">
+      <div class="s-label">洗盘状态</div>
+      <div class="s-value" id="sWash">--</div>
+      <div class="s-desc" id="sWashDesc">--</div>
+    </div>
+  </div>
+
+  <div class="cond-section" id="condSection">
+    <div class="section-title">五大选股条件 <span class="badge" id="condCount">0/5</span></div>
+    <div id="condList"></div>
+  </div>
+
+  <div class="footer">
+    数据来源：腾讯行情 / TickFlow · 仅供学习研究<br>
+    股市有风险，投资需谨慎 · © 2026 A股智能选股
+  </div>
+</div>
+
+<script>
+/* ========== 工具函数 ========== */
+const $ = id => document.getElementById(id);
+
+function getSecid(code){
+  code = String(code).padStart(6,'0');
+  if(/^6/.test(code)) return '1.'+code;     // 上海
+  if(/^[03]/.test(code)) return '0.'+code;   // 深圳
+  if(/^[89]/.test(code)) return '0.'+code;   // 北交所
+  return '1.'+code;
+}
+
+function getTickSymbol(code){
+  code = String(code).padStart(6,'0');
+  if(/^6/.test(code)) return code+'.SH';
+  if(/^[03]/.test(code)) return code+'.SZ';
+  if(/^[89]/.test(code)) return code+'.BJ';
+  return code+'.SH';
+}
+
+function fmtNum(n,d=2){
+  if(n==null||isNaN(n)) return '--';
+  return Number(n).toFixed(d);
+}
+function fmtAmount(n){
+  if(n==null||isNaN(n)) return '--';
+  n=Number(n);
+  if(n>=1e8) return (n/1e8).toFixed(2)+'亿';
+  if(n>=1e4) return (n/1e4).toFixed(2)+'万';
+  return n.toFixed(0);
+}
+function fmtVol(n){
+  if(n==null||isNaN(n)) return '--';
+  n=Number(n);
+  if(n>=1e8) return (n/1e8).toFixed(2)+'亿';
+  if(n>=1e4) return (n/1e4).toFixed(2)+'万';
+  return n.toFixed(0);
+}
+
+function showLoading(text){
+  $('loading').classList.add('show');
+  $('loadingText').innerHTML = text;
+  $('stockCard').classList.remove('show');
+  $('klineCard').classList.remove('show');
+  $('verdict').classList.remove('show');
+  $('signalGrid').classList.remove('show');
+  $('condSection').classList.remove('show');
+  $('errorBox').classList.remove('show');
+}
+function hideLoading(){ $('loading').classList.remove('show'); }
+function showError(msg){
+  hideLoading();
+  $('errorBox').textContent = msg;
+  $('errorBox').classList.add('show');
+}
+
+/* ========== 数据获取：腾讯行情（默认，CORS友好） ========== */
+function getTencentPrefix(code){
+  code = String(code).padStart(6,'0');
+  if(/^6/.test(code)) return 'sh';
+  if(/^[03]/.test(code)) return 'sz';
+  if(/^[89]/.test(code)) return 'bj';
+  return 'sh';
+}
+
+function fetchTencentQuote(code){
+  return new Promise((resolve,reject)=>{
+    const prefix = getTencentPrefix(code);
+    const symbol = prefix + code;
+    const varName = 'v_'+symbol;
+    const script = document.createElement('script');
+    script.charset = 'gbk';
+    script.src = `https://qt.gtimg.cn/q=${symbol}`;
+    let done = false;
+    const cleanup = ()=>{ try{ delete window[varName]; }catch(e){ window[varName]=undefined; } script.remove(); };
+    script.onload = ()=>{
+      if(done) return; done = true;
+      const raw = window[varName];
+      cleanup();
+      if(!raw){ reject(new Error('行情数据为空，请检查股票代码')); return; }
+      const f = raw.split('~');
+      if(f.length<43){ reject(new Error('行情数据格式异常')); return; }
+      resolve({
+        name: f[1] || '--',
+        code: f[2] || code,
+        price: parseFloat(f[3]),
+        prevClose: parseFloat(f[4]),
+        open: parseFloat(f[5]),
+        volume: parseFloat(f[6]),        // 手
+        high: parseFloat(f[33]),
+        low: parseFloat(f[34]),
+        amount: parseFloat(f[37])*10000, // 万元→元
+        changePct: parseFloat(f[32]),
+        amplitude: parseFloat(f[43]),
+        turnoverRate: parseFloat(f[38])
+      });
+    };
+    script.onerror = ()=>{ if(done) return; done=true; cleanup(); reject(new Error('获取行情失败')); };
+    document.head.appendChild(script);
+    setTimeout(()=>{ if(!done){ done=true; cleanup(); reject(new Error('获取行情超时')); } }, 8000);
+  });
+}
+
+async function fetchTencentKline(code, count=30){
+  const prefix = getTencentPrefix(code);
+  const symbol = prefix + code;
+  const url = `https://web.ifzq.gtimg.cn/appstock/app/fqkline/get?param=${symbol},day,,,${count},qfq`;
+  const res = await fetch(url);
+  const data = await res.json();
+  const klines = data?.data?.[symbol]?.qfqday || data?.data?.[symbol]?.day || [];
+  if(!klines.length) throw new Error('未获取到K线数据');
+  return klines.map(k=>({
+    date: k[0],
+    open: parseFloat(k[1]),
+    close: parseFloat(k[2]),
+    high: parseFloat(k[3]),
+    low: parseFloat(k[4]),
+    volume: parseFloat(k[5]), // 手
+    amount: 0,
+    amplitude: 0,
+    changePct: 0,
+    changeAmt: 0,
+    turnover: 0
+  }));
+}
+
+/* ========== 数据获取：TickFlow ========== */
+async function fetchTickFlowQuote(code, apiKey){
+  const symbol = getTickSymbol(code);
+  const url = `https://api.tickflow.org/v1/quotes?symbols=${symbol}`;
+  const res = await fetch(url, {headers:{'x-api-key':apiKey}});
+  if(res.status===401) throw new Error('TickFlow API Key 无效');
+  const data = await res.json();
+  const q = data[0] || data.data?.[0];
+  if(!q) throw new Error('未获取到行情数据');
+  return {
+    name: q.ext?.name || q.name || '--',
+    code: code,
+    price: q.last_price,
+    open: q.open,
+    high: q.high,
+    low: q.low,
+    prevClose: q.prev_close,
+    volume: q.volume,
+    amount: q.amount,
+    changePct: (q.ext?.change_pct!=null? q.ext.change_pct*100 : null),
+    amplitude: (q.ext?.amplitude!=null? q.ext.amplitude*100 : null),
+    turnoverRate: (q.ext?.turnover_rate!=null? q.ext.turnover_rate*100 : null)
+  };
+}
+
+async function fetchTickFlowKline(code, apiKey, count=30){
+  const symbol = getTickSymbol(code);
+  const url = `https://api.tickflow.org/v1/klines?symbol=${symbol}&period=1d&count=${count}&adjust=forward_additive`;
+  const res = await fetch(url, {headers:{'x-api-key':apiKey}});
+  if(res.status===401) throw new Error('TickFlow API Key 无效');
+  const data = await res.json();
+  const klines = data.klines || data.data?.klines || data;
+  if(!Array.isArray(klines)) throw new Error('未获取到K线数据');
+  return klines.map(k=>({
+    date: k.trade_date || k.date,
+    open: parseFloat(k.open),
+    close: parseFloat(k.close),
+    high: parseFloat(k.high),
+    low: parseFloat(k.low),
+    volume: parseFloat(k.volume),
+    amount: parseFloat(k.amount),
+    amplitude: 0,
+    changePct: 0,
+    changeAmt: 0,
+    turnover: 0
+  }));
+}
+
+/* ========== 条件计算 ========== */
+function analyzeConditions(quote, klines){
+  const results = [];
+  const last5 = klines.slice(-5);
+  const last10 = klines.slice(-15,-5);
+  const last3 = klines.slice(-3);
+  const today = klines[klines.length-1];
+  const prev5Close = klines[klines.length-6]?.close || today.open;
+
+  // 计算5日均线
+  const ma5 = klines.slice(-5).reduce((s,k)=>s+k.close,0)/5;
+
+  // 条件1：股价5-100元
+  const price = quote.price;
+  const c1 = {
+    name:'股价区间',
+    desc:'股价在5元~100元之间',
+    pass: price>=5 && price<=100,
+    detail:`当前股价：<b>${fmtNum(price)}</b> 元${price>=5&&price<=100?'（符合区间）':price<5?'（低于5元）':'（高于100元）'}`
+  };
+  results.push(c1);
+
+  // 条件2：今日涨幅2%-7%
+  const chg = quote.changePct;
+  const c2 = {
+    name:'今日涨幅',
+    desc:'今日涨幅在2%~7%之间',
+    pass: chg!=null && chg>=2 && chg<=7,
+    detail:`今日涨幅：<b>${fmtNum(chg)}%</b>${chg!=null&&chg>=2&&chg<=7?'（符合区间）':chg<2?'（涨幅不足2%）':'（涨幅超过7%）'}`
+  };
+  results.push(c2);
+
+  // 条件3：成交额>1亿
+  const amt = quote.amount;
+  const c3 = {
+    name:'成交额',
+    desc:'成交额大于1亿元',
+    pass: amt!=null && amt>1e8,
+    detail:`今日成交额：<b>${fmtAmount(amt)}</b>${amt!=null&&amt>1e8?'（大于1亿，交投活跃）':'（不足1亿，流动性偏低）'}`
+  };
+  results.push(c3);
+
+  // 条件4：最近5日至少3天放量（量>前10日均量1.3倍）且5日累计涨幅<5%
+  const avg10Vol = last10.length>0 ? last10.reduce((s,k)=>s+k.volume,0)/last10.length : 0;
+  let volBoostDays = 0;
+  last5.forEach(k=>{
+    if(avg10Vol>0 && k.volume > avg10Vol*1.3) volBoostDays++;
+  });
+  const cum5Chg = ((today.close - prev5Close)/prev5Close)*100;
+  const c4pass = volBoostDays>=3 && cum5Chg<5;
+  const c4 = {
+    name:'主力底部建仓',
+    desc:'近5日≥3天放量(>10日均量1.3倍) 且 累计涨幅<5%',
+    pass: c4pass,
+    detail:`近5日放量天数：<b>${volBoostDays}/5</b>（10日均量：${fmtVol(avg10Vol)}）<br>近5日累计涨幅：<b>${fmtNum(cum5Chg)}%</b>${c4pass?'（建仓痕迹明显）':volBoostDays<3?'（放量天数不足）':'（累计涨幅过大，非底部建仓）'}`
+  };
+  results.push(c4);
+
+  // 条件5：近3日出现长下影线 或 缩量横盘（振幅<3%，量持续萎缩），且今日站上5日均线
+  let longLowerShadow = false;
+  let shrinkingSideways = true;
+  const vols3 = last3.map(k=>k.volume);
+  last3.forEach((k,i)=>{
+    const body = Math.abs(k.close - k.open);
+    const upperShadow = k.high - Math.max(k.open,k.close);
+    const lowerShadow = Math.min(k.open,k.close) - k.low;
+    // 长下影线：下影线 > 实体*2 且 下影线 > (高-低)*0.4
+    if(body>0 && lowerShadow > body*2 && lowerShadow > (k.high-k.low)*0.4){
+      longLowerShadow = true;
+    }
+    // 缩量横盘：每日振幅<3%
+    const amp = k.amplitude!=null ? k.amplitude : ((k.high-k.low)/(klines[klines.length-4+i]?.close||k.close))*100;
+    if(amp>=3) shrinkingSideways = false;
+    // 量持续萎缩
+    if(i>0 && vols3[i] >= vols3[i-1]) shrinkingSideways = false;
+  });
+  const priceAboveMA5 = today.close > ma5;
+  const pattern = (longLowerShadow ? '长下影线' : '') + (longLowerShadow&&shrinkingSideways?' + ':'') + (shrinkingSideways?'缩量横盘':'');
+  const c5pass = (longLowerShadow || shrinkingSideways) && priceAboveMA5;
+  const c5 = {
+    name:'洗盘结束信号',
+    desc:'近3日长下影线/缩量横盘 且 今日站上5日均线',
+    pass: c5pass,
+    detail:`近3日形态：<b>${pattern||'无明显形态'}</b><br>5日均线：<b>${fmtNum(ma5)}</b>，今日收盘：<b>${fmtNum(today.close)}</b>${priceAboveMA5?'（站上均线）':'（未站上均线）'}<br>${c5pass?'（洗盘可能结束，关注拉升）':pattern?'（形态存在但未站上均线）':'（无洗盘结束形态）'}`
+  };
+  results.push(c5);
+
+  // 主力信号
+  let mainSignal='--', mainDesc='--', mainCls='weak';
+  if(volBoostDays>=3 && cum5Chg<5){ mainSignal='强 建仓信号'; mainCls='strong'; mainDesc=`近5日${volBoostDays}天放量而股价滞涨，疑似主力底部吸筹`; }
+  else if(volBoostDays>=2){ mainSignal='中 关注信号'; mainCls='medium'; mainDesc=`近5日${volBoostDays}天放量，需结合量价关系进一步判断`; }
+  else { mainSignal='弱 无明显信号'; mainCls='weak'; mainDesc='近5日放量不足，未见明显主力建仓痕迹'; }
+
+  // 洗盘信号
+  let washSignal='--', washDesc='--', washCls='weak';
+  if(c5pass){ washSignal='洗盘结束'; washCls='yes'; washDesc='出现洗盘结束形态且站上5日均线，可能即将拉升'; }
+  else if(longLowerShadow||shrinkingSideways){ washSignal='洗盘中'; washCls='medium'; washDesc='出现洗盘形态但尚未确认结束信号'; }
+  else { washSignal='无洗盘信号'; washCls='no'; washDesc='近3日未出现明显洗盘形态'; }
+
+  return { results, mainSignal, mainDesc, mainCls, washSignal, washDesc, washCls, volBoostDays, cum5Chg, ma5, longLowerShadow, shrinkingSideways };
+}
+
+/* ========== K线绘制 ========== */
+function drawKline(canvas, klines){
+  const ctx = canvas.getContext('2d');
+  const dpr = window.devicePixelRatio || 1;
+  const w = canvas.clientWidth;
+  const h = 120;
+  canvas.width = w*dpr; canvas.height = h*dpr;
+  ctx.scale(dpr,dpr);
+  ctx.clearRect(0,0,w,h);
+
+  const data = klines.slice(-15);
+  if(data.length<2) return;
+  const highs = data.map(k=>k.high), lows = data.map(k=>k.low);
+  const maxP = Math.max(...highs), minP = Math.min(...lows);
+  const range = maxP - minP || 1;
+  const pad = 10;
+  const chartH = h - pad*2;
+  const barW = (w - pad*2) / data.length;
+  const candleW = Math.max(2, barW*0.6);
+
+  data.forEach((k,i)=>{
+    const x = pad + i*barW + barW/2;
+    const yHigh = pad + (1-(k.high-minP)/range)*chartH;
+    const yLow = pad + (1-(k.low-minP)/range)*chartH;
+    const yOpen = pad + (1-(k.open-minP)/range)*chartH;
+    const yClose = pad + (1-(k.close-minP)/range)*chartH;
+    const up = k.close>=k.open;
+    ctx.strokeStyle = up?'#ef4444':'#22c55e';
+    ctx.fillStyle = up?'#ef4444':'#22c55e';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(x,yHigh); ctx.lineTo(x,yLow); ctx.stroke();
+    const bodyTop = Math.min(yOpen,yClose);
+    const bodyH = Math.max(1,Math.abs(yClose-yOpen));
+    ctx.fillRect(x-candleW/2, bodyTop, candleW, bodyH);
+  });
+
+  // 5日均线
+  ctx.strokeStyle = 'rgba(245,158,11,.7)';
+  ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  for(let i=4;i<data.length;i++){
+    const ma = data.slice(i-4,i+1).reduce((s,k)=>s+k.close,0)/5;
+    const x = pad + i*barW + barW/2;
+    const y = pad + (1-(ma-minP)/range)*chartH;
+    if(i===4) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+  }
+  ctx.stroke();
+}
+
+/* ========== 主流程 ========== */
+async function analyze(){
+  let code = $('stockCode').value.trim();
+  if(!code){ showError('请输入股票代码'); return; }
+  code = code.replace(/[^\d]/g,'').padStart(6,'0');
+  if(!/^\d{6}$/.test(code)){ showError('请输入6位股票代码'); return; }
+
+  const apiKey = $('apiKey').value.trim();
+  localStorage.setItem('tf_api_key', apiKey);
+
+  showLoading('正在获取行情数据...<span>连接数据源</span>');
+  $('analyzeBtn').disabled = true;
+
+  try{
+    let quote, klines;
+    if(apiKey){
+      $('loadingText').innerHTML = '正在获取行情数据...<span>使用 TickFlow 数据源</span>';
+      [quote, klines] = await Promise.all([
+        fetchTickFlowQuote(code, apiKey),
+        fetchTickFlowKline(code, apiKey, 30)
+      ]);
+    } else {
+      $('loadingText').innerHTML = '正在获取行情数据...<span>使用腾讯行情数据源</span>';
+      [quote, klines] = await Promise.all([
+        fetchTencentQuote(code),
+        fetchTencentKline(code, 30)
+      ]);
+    }
+
+    if(klines.length<15){
+      showError('K线数据不足（至少需要15个交易日），请稍后重试');
+      return;
+    }
+
+    // 从OHLC补算振幅、涨跌幅（腾讯K线接口不返回这些字段）
+    klines.forEach((k,i)=>{
+      const prevClose = i>0 ? klines[i-1].close : k.open;
+      if(!k.amplitude) k.amplitude = prevClose>0 ? ((k.high-k.low)/prevClose)*100 : 0;
+      if(!k.changePct) k.changePct = prevClose>0 ? ((k.close-prevClose)/prevClose)*100 : 0;
+    });
+
+    $('loadingText').innerHTML = '正在分析选股条件...<span>计算量价指标</span>';
+    await new Promise(r=>setTimeout(r,300));
+
+    renderResult(quote, klines);
+  }catch(e){
+    console.error(e);
+    showError('分析失败：'+(e.message||'未知错误')+'。请检查股票代码或网络连接。');
+  }finally{
+    $('analyzeBtn').disabled = false;
+    hideLoading();
+  }
+}
+
+function renderResult(quote, klines){
+  // 股票卡片
+  $('stockName').textContent = quote.name || '--';
+  $('stockCodeDisp').textContent = quote.code || $('stockCode').value.padStart(6,'0');
+  const priceEl = $('stockPrice'), chgEl = $('stockChange');
+  const price = quote.price;
+  const chg = quote.changePct;
+  priceEl.textContent = fmtNum(price);
+  priceEl.className = 'price ' + (chg>=0?'up':'down');
+  if(chg!=null){
+    chgEl.textContent = (chg>=0?'+':'')+fmtNum(chg)+'%';
+    chgEl.className = 'change ' + (chg>=0?'up':'down');
+  } else {
+    chgEl.textContent = '--';
+    chgEl.className = 'change';
+  }
+  $('mOpen').textContent = fmtNum(quote.open);
+  $('mHigh').textContent = fmtNum(quote.high);
+  $('mLow').textContent = fmtNum(quote.low);
+  $('mAmount').textContent = fmtAmount(quote.amount);
+  $('mTurnover').textContent = fmtNum(quote.turnoverRate)+'%';
+  $('mAmp').textContent = fmtNum(quote.amplitude)+'%';
+  $('stockCard').classList.add('show');
+
+  // K线（先显示卡片再绘制，确保canvas有宽度）
+  $('klineCard').classList.add('show');
+  const last15 = klines.slice(-15);
+  $('klineStart').textContent = last15[0]?.date || '--';
+  $('klineEnd').textContent = last15[last15.length-1]?.date || '--';
+  requestAnimationFrame(()=>drawKline($('klineCanvas'), klines));
+
+  // 条件分析
+  const { results, mainSignal, mainDesc, mainCls, washSignal, washDesc, washCls } = analyzeConditions(quote, klines);
+  const passCount = results.filter(r=>r.pass).length;
+
+  // 结论
+  const verdict = $('verdict');
+  verdict.className = 'verdict ' + (passCount===5?'pass':'fail');
+  $('verdictTitle').textContent = passCount===5?`✓ 完全符合选股条件（${passCount}/5）`:`✗ 未完全符合（${passCount}/5）`;
+  $('verdictDesc').textContent = passCount===5
+    ? '该股票同时满足全部5个选股条件，主力建仓痕迹明显且洗盘可能结束，可纳入重点观察池。'
+    : `该股票有${passCount}个条件符合，${5-passCount}个条件未达标。请查看下方条件详情。`;
+  verdict.classList.add('show');
+
+  // 信号卡片
+  $('sMain').textContent = mainSignal;
+  $('sMain').className = 's-value '+mainCls;
+  $('sMainDesc').textContent = mainDesc;
+  $('sWash').textContent = washSignal;
+  $('sWash').className = 's-value '+washCls;
+  $('sWashDesc').textContent = washDesc;
+  $('signalGrid').classList.add('show');
+
+  // 条件列表
+  $('condCount').textContent = `${passCount}/5`;
+  const list = $('condList');
+  list.innerHTML = '';
+  results.forEach((r,i)=>{
+    const item = document.createElement('div');
+    item.className = 'cond-item '+(r.pass?'pass':'fail');
+    item.innerHTML = `
+      <div class="cond-head">
+        <div class="cond-num">${i+1}</div>
+        <div class="cond-name">${r.name}</div>
+        <div class="cond-status">${r.pass?'符合':'不符合'}</div>
+      </div>
+      <div class="cond-detail">${r.desc}<br>${r.detail}</div>
+      <div class="cond-toggle">${r.pass?'':'展开详情'}</div>
+    `;
+    item.querySelector('.cond-toggle').addEventListener('click',()=>{
+      item.classList.toggle('open');
+      item.querySelector('.cond-toggle').textContent = item.classList.contains('open')?'收起':'展开详情';
+    });
+    list.appendChild(item);
+  });
+  $('condSection').classList.add('show');
+
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+/* ========== 事件绑定 ========== */
+$('analyzeBtn').addEventListener('click', analyze);
+$('stockCode').addEventListener('keydown', e=>{
+  if(e.key==='Enter') analyze();
+});
+$('toggleApi').addEventListener('click',()=>{
+  $('apiKeyRow').classList.toggle('show');
+});
+document.querySelectorAll('.chip').forEach(c=>{
+  c.addEventListener('click',()=>{
+    $('stockCode').value = c.dataset.code;
+    analyze();
+  });
+});
+
+// 恢复保存的API Key
+const savedKey = localStorage.getItem('tf_api_key');
+if(savedKey){ $('apiKey').value = savedKey; $('apiKeyRow').classList.add('show'); }
+</script>
+</body>
+</html>
