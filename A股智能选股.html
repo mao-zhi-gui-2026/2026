@@ -1,0 +1,512 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>A股智能选股 · 主力建仓洗盘识别</title>
+<style>
+  *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  :root{
+    --up:#e74c3c;--down:#27ae60;--bg:#0f1419;--card:#1a1f2e;--card2:#222838;
+    --text:#e8eaed;--text2:#9aa3b2;--border:#2a3040;--accent:#4f8cff;--accent2:#7c5cff;
+    --pass:#27ae60;--fail:#e74c3c;--warn:#f39c12
+  }
+  html,body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;min-height:100vh;line-height:1.5}
+  body{background:linear-gradient(160deg,#0f1419 0%,#131a2e 100%)}
+  .wrap{max-width:720px;margin:0 auto;padding:16px 14px 60px}
+  /* 头部 */
+  .header{text-align:center;padding:18px 0 22px}
+  .header h1{font-size:22px;font-weight:700;background:linear-gradient(90deg,#4f8cff,#7c5cff);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+  .header p{font-size:12px;color:var(--text2);margin-top:6px}
+  .badge{display:inline-block;font-size:10px;padding:3px 10px;border-radius:20px;background:rgba(79,140,255,.15);color:#7bb0ff;margin-top:8px;border:1px solid rgba(79,140,255,.3)}
+  /* 输入区 */
+  .search-card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:16px;box-shadow:0 8px 24px rgba(0,0,0,.3)}
+  .input-row{display:flex;gap:10px}
+  .input-row input{flex:1;background:var(--card2);border:1px solid var(--border);border-radius:12px;padding:14px 16px;color:var(--text);font-size:16px;outline:none;transition:.2s}
+  .input-row input:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(79,140,255,.15)}
+  .input-row button{background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;border:none;border-radius:12px;padding:14px 20px;font-size:15px;font-weight:600;cursor:pointer;white-space:nowrap;transition:.2s}
+  .input-row button:active{transform:scale(.96)}
+  .input-row button:disabled{opacity:.5;cursor:not-allowed}
+  .hint{font-size:11px;color:var(--text2);margin-top:10px;text-align:center}
+  .hint code{background:var(--card2);padding:2px 6px;border-radius:4px;color:#7bb0ff;font-size:11px}
+  /* 加载 */
+  .loading{text-align:center;padding:40px 20px;color:var(--text2)}
+  .spinner{width:40px;height:40px;border:3px solid var(--border);border-top-color:var(--accent);border-radius:50%;margin:0 auto 14px;animation:spin .8s linear infinite}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  /* 结果区 */
+  .result{margin-top:18px;display:none}
+  .result.show{display:block;animation:fade .3s ease}
+  @keyframes fade{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+  /* 股票头 */
+  .stock-head{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:18px;margin-bottom:14px}
+  .stock-name{font-size:20px;font-weight:700}
+  .stock-code{font-size:13px;color:var(--text2);margin-top:2px}
+  .price-row{display:flex;align-items:baseline;gap:12px;margin-top:12px;flex-wrap:wrap}
+  .price{font-size:32px;font-weight:800}
+  .change{font-size:15px;font-weight:600;padding:3px 10px;border-radius:8px}
+  .up{color:var(--up)}
+  .down{color:var(--down)}
+  .bg-up{background:rgba(231,76,60,.15);color:var(--up)}
+  .bg-down{background:rgba(39,174,96,.15);color:var(--down)}
+  .meta-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-top:14px}
+  .meta-item{background:var(--card2);border-radius:10px;padding:10px 12px}
+  .meta-label{font-size:11px;color:var(--text2)}
+  .meta-val{font-size:14px;font-weight:600;margin-top:3px}
+  /* 条件卡片 */
+  .section-title{font-size:15px;font-weight:700;margin:18px 4px 10px;display:flex;align-items:center;gap:8px}
+  .section-title::before{content:"";width:4px;height:16px;background:linear-gradient(var(--accent),var(--accent2));border-radius:2px}
+  .cond-list{display:flex;flex-direction:column;gap:10px}
+  .cond{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:14px;display:flex;gap:12px;align-items:flex-start}
+  .cond-icon{width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0}
+  .cond.pass .cond-icon{background:rgba(39,174,96,.15)}
+  .cond.fail .cond-icon{background:rgba(231,76,60,.15)}
+  .cond.warn .cond-icon{background:rgba(243,156,18,.15)}
+  .cond-body{flex:1;min-width:0}
+  .cond-title{font-size:14px;font-weight:600}
+  .cond-desc{font-size:12px;color:var(--text2);margin-top:3px;line-height:1.5}
+  .cond-detail{font-size:12px;margin-top:6px;padding:6px 10px;background:var(--card2);border-radius:8px;color:#cbd1dc}
+  .cond-tag{font-size:11px;font-weight:600;padding:3px 9px;border-radius:6px;flex-shrink:0;margin-top:2px}
+  .tag-pass{background:rgba(39,174,96,.15);color:var(--pass)}
+  .tag-fail{background:rgba(231,76,60,.15);color:var(--fail)}
+  .tag-warn{background:rgba(243,156,18,.15);color:var(--warn)}
+  /* 结论 */
+  .verdict{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:18px;margin-top:18px;text-align:center}
+  .verdict-score{font-size:40px;font-weight:800;margin:6px 0}
+  .verdict-label{font-size:13px;color:var(--text2)}
+  .verdict-msg{font-size:14px;margin-top:10px;line-height:1.6}
+  .signal-row{display:flex;gap:10px;margin-top:14px;justify-content:center;flex-wrap:wrap}
+  .signal-pill{padding:8px 14px;border-radius:20px;font-size:12px;font-weight:600}
+  /* 图表 */
+  .chart-card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:14px;margin-top:14px}
+  .chart-card h3{font-size:14px;margin-bottom:10px}
+  canvas{width:100%!important;height:auto!important}
+  /* 免责 */
+  .disclaimer{font-size:11px;color:var(--text2);text-align:center;margin-top:24px;line-height:1.7;padding:0 10px}
+  .disclaimer strong{color:#cbd1dc}
+  /* 手动确认区 */
+  .manual-box{background:rgba(243,156,18,.08);border:1px dashed rgba(243,156,18,.4);border-radius:12px;padding:14px;margin-top:10px}
+  .manual-box .m-title{font-size:13px;font-weight:600;color:var(--warn);margin-bottom:10px}
+  .manual-row{display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap}
+  .manual-row label{font-size:12px;color:var(--text2);display:flex;align-items:center;gap:5px;cursor:pointer}
+  .manual-row input[type=checkbox]{accent-color:var(--warn);width:16px;height:16px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="header">
+    <h1>A股智能选股</h1>
+    <p>主力底部建仓 + 洗盘结束识别</p>
+    <span class="badge">数据源：TickFlow 免费版 · 无需注册</span>
+  </div>
+
+  <div class="search-card">
+    <div class="input-row">
+      <input type="text" id="codeInput" placeholder="输入股票代码，如 600519 或 000001" inputmode="numeric" maxlength="6">
+      <button id="analyzeBtn" onclick="analyze()">开始分析</button>
+    </div>
+    <div class="hint">支持沪市 <code>600/601/603/605/688</code>、深市 <code>000/001/002/003/300</code>、北交所 <code>4/8</code></div>
+  </div>
+
+  <div class="loading" id="loading" style="display:none">
+    <div class="spinner"></div>
+    <div id="loadingText">正在获取行情数据...</div>
+  </div>
+
+  <div class="result" id="result"></div>
+
+  <div class="disclaimer">
+    <strong>免责声明：</strong>本工具基于 TickFlow 历史日K数据进行技术形态分析，仅供学习研究参考，不构成任何投资建议。<br>
+    免费版数据为历史日K线，盘中不实时更新；北向资金与机构持仓数据需付费版支持。<br>
+    股市有风险，投资需谨慎。
+  </div>
+</div>
+
+<script>
+const FREE_API = "https://free-api.tickflow.org";
+
+// 股票代码转标准 symbol
+function toSymbol(code){
+  code = String(code).trim();
+  if(!/^\d{6}$/.test(code)) return null;
+  const c = code.charAt(0);
+  if(c === '6') return code + ".SH";
+  if(c === '0' || c === '3') return code + ".SZ";
+  if(c === '4' || c === '8') return code + ".BJ";
+  return null;
+}
+
+// 格式化成交额
+function fmtAmount(n){
+  if(n >= 1e8) return (n/1e8).toFixed(2) + "亿";
+  if(n >= 1e4) return (n/1e4).toFixed(0) + "万";
+  return n.toFixed(0);
+}
+function fmtVol(n){
+  if(n >= 1e8) return (n/1e8).toFixed(2) + "亿";
+  if(n >= 1e4) return (n/1e4).toFixed(0) + "万";
+  return n.toFixed(0);
+}
+function fmtDate(ts){
+  const d = new Date(ts);
+  return (d.getMonth()+1) + "/" + d.getDate();
+}
+function pct(n){ return (n>=0?'+':'') + n.toFixed(2) + '%'; }
+
+async function fetchJSON(url, opts){
+  const r = await fetch(url, opts);
+  if(!r.ok) throw new Error("HTTP " + r.status);
+  return r.json();
+}
+
+async function analyze(){
+  const code = document.getElementById('codeInput').value.trim();
+  if(!code){ alert("请输入股票代码"); return; }
+  const symbol = toSymbol(code);
+  if(!symbol){ alert("股票代码格式不正确，请输入6位数字代码"); return; }
+
+  const btn = document.getElementById('analyzeBtn');
+  const loading = document.getElementById('loading');
+  const result = document.getElementById('result');
+  const loadText = document.getElementById('loadingText');
+
+  btn.disabled = true;
+  loading.style.display = 'block';
+  result.classList.remove('show');
+  result.innerHTML = '';
+
+  try{
+    loadText.textContent = "正在获取 K 线数据...";
+    // 获取最近60个交易日数据（足够计算10日均量、5日均线等）
+    const klineRes = await fetchJSON(`${FREE_API}/v1/klines?symbol=${symbol}&period=1d&count=60`);
+    const d = klineRes.data;
+    if(!d || !d.timestamp || d.timestamp.length < 15){
+      throw new Error("K线数据不足，无法分析");
+    }
+
+    loadText.textContent = "正在获取标的信息...";
+    let inst = null;
+    try{
+      const instRes = await fetchJSON(`${FREE_API}/v1/instruments`, {
+        method:"POST",
+        headers:{"Content-Type":"application/json"},
+        body: JSON.stringify({symbols:[symbol]})
+      });
+      inst = instRes.data && instRes.data[0];
+    }catch(e){ inst = null; }
+
+    // 解析数据
+    const n = d.timestamp.length;
+    const closes = d.close, opens = d.open, highs = d.high, lows = d.low;
+    const volumes = d.volume, amounts = d.amount, times = d.timestamp;
+
+    const lastClose = closes[n-1];
+    const prevClose = closes[n-2];
+    const changePct = (lastClose - prevClose) / prevClose * 100;
+    const lastAmount = amounts[n-1];
+    const lastVol = volumes[n-1];
+
+    // ===== 条件计算 =====
+    const conditions = [];
+
+    // 条件1：股价 5-100
+    const c1 = lastClose >= 5 && lastClose <= 100;
+    conditions.push({
+      id:1, pass:c1, icon:"💰",
+      title:"股价在 5 ~ 100 元之间",
+      desc:"过滤低价股和高价股，聚焦中价活跃标的",
+      detail:`当前价：${lastClose.toFixed(2)} 元`
+    });
+
+    // 条件2：今日涨幅 2%-7%
+    const c2 = changePct >= 2 && changePct <= 7;
+    conditions.push({
+      id:2, pass:c2, icon:"📈",
+      title:"今日涨幅 2% ~ 7%",
+      desc:"温和上涨，非涨停也非滞涨，主力有动作但未过热",
+      detail:`最新涨幅：${pct(changePct)}`
+    });
+
+    // 条件3：成交额 > 1亿
+    const c3 = lastAmount > 1e8;
+    conditions.push({
+      id:3, pass:c3, icon:"💵",
+      title:"成交额 > 1 亿元",
+      desc:"资金关注度高，流动性充足，便于进出",
+      detail:`最新成交额：${fmtAmount(lastAmount)}`
+    });
+
+    // 条件4：近5日至少3天放量（>前10日均量1.3倍）且累计涨幅<5%
+    const win5 = 5, prev10 = 10;
+    const startIdx = n - win5;            // 近5天起始索引
+    const prevStart = startIdx - prev10;  // 前10天起始索引
+    let baseAvg = 0;
+    for(let i=prevStart;i<startIdx;i++) baseAvg += volumes[i];
+    baseAvg /= prev10;
+    let volBoostDays = 0;
+    for(let i=startIdx;i<n;i++){
+      if(volumes[i] > baseAvg * 1.3) volBoostDays++;
+    }
+    const cumGain5 = (closes[n-1] - closes[startIdx-1]) / closes[startIdx-1] * 100;
+    const c4 = volBoostDays >= 3 && cumGain5 < 5;
+    conditions.push({
+      id:4, pass:c4, icon:"🐋",
+      title:"主力底部建仓信号",
+      desc:"近5日至少3天放量(>前10日均量1.3倍)，且累计涨幅<5%——放量不涨，疑似主力底部吸筹",
+      detail:`放量天数：${volBoostDays}/5 ｜ 5日累计涨幅：${pct(cumGain5)} ｜ 前10日均量：${fmtVol(baseAvg)}`
+    });
+
+    // 条件5：近3日出现长下影线或缩量横盘，且站上5日均线
+    let hasPattern = false;
+    let patternDesc = "";
+    for(let i=n-3;i<n;i++){
+      const o=opens[i], c=closes[i], h=highs[i], l=lows[i];
+      const body = Math.abs(c-o);
+      const upperShadow = h - Math.max(o,c);
+      const lowerShadow = Math.min(o,c) - l;
+      const range = h - l;
+      const amplitude = range / closes[i-1] * 100;
+      // 长下影线：下影线 > 2倍实体 且 下影线占振幅>40%
+      if(lowerShadow > body*2 && range>0 && lowerShadow/range > 0.4){
+        hasPattern = true;
+        patternDesc = fmtDate(times[i]) + " 出现长下影线（下影:"+lowerShadow.toFixed(2)+"）";
+        break;
+      }
+    }
+    // 缩量横盘：近3日振幅均<3% 且 成交量逐日递减
+    let shrinkSideways = true;
+    for(let i=n-3;i<n;i++){
+      const amp = (highs[i]-lows[i]) / closes[i-1] * 100;
+      if(amp >= 3){ shrinkSideways = false; break; }
+    }
+    if(shrinkSideways){
+      // 成交量递减
+      if(volumes[n-3] > volumes[n-2] && volumes[n-2] > volumes[n-1]){
+        hasPattern = true;
+        if(!patternDesc) patternDesc = "近3日缩量横盘（振幅<3%且量能递减）";
+        else patternDesc += "；且近3日缩量横盘";
+      }
+    }
+    // 5日均线
+    let ma5 = 0;
+    for(let i=n-5;i<n;i++) ma5 += closes[i];
+    ma5 /= 5;
+    const aboveMA5 = lastClose > ma5;
+    const c5 = hasPattern && aboveMA5;
+    conditions.push({
+      id:5, pass:c5, icon:"🧹",
+      title:"洗盘结束信号",
+      desc:"近3日出现长下影线或缩量横盘，且股价站上5日均线——洗盘尾声，可能即将拉升",
+      detail:`形态：${patternDesc||"未识别到洗盘形态"} ｜ 5日均线：${ma5.toFixed(2)} ｜ 站上MA5：${aboveMA5?'是':'否'}`
+    });
+
+    // 条件6：北向资金流入 + 机构数>5（免费版不提供此数据）
+    const c6 = false;
+    conditions.push({
+      id:6, pass:null, icon:"🏦",
+      title:"北向资金流入 & 机构数>5",
+      desc:"外资持续流入且机构持仓家数>5，有大资金背书",
+      detail:"TickFlow 免费版不提供北向资金与机构持仓数据，请在下方手动确认或升级付费版",
+      warn:true
+    });
+
+    // 统计通过数（条件6单独处理）
+    const autoPass = conditions.filter(c=>c.pass===true).length;
+    const totalAuto = 5;
+    const score = Math.round(autoPass / totalAuto * 100);
+
+    // ===== 渲染 =====
+    const stockName = inst ? inst.name : symbol;
+    const cls = changePct >= 0 ? 'up' : 'down';
+    const bgCls = changePct >= 0 ? 'bg-up' : 'bg-down';
+
+    let html = `
+      <div class="stock-head">
+        <div class="stock-name">${stockName}</div>
+        <div class="stock-code">${symbol} ${inst?'· '+inst.exchange+'交易所':''}</div>
+        <div class="price-row">
+          <span class="price ${cls}">${lastClose.toFixed(2)}</span>
+          <span class="change ${bgCls}">${pct(changePct)}</span>
+        </div>
+        <div class="meta-grid">
+          <div class="meta-item"><div class="meta-label">成交额</div><div class="meta-val">${fmtAmount(lastAmount)}</div></div>
+          <div class="meta-item"><div class="meta-label">成交量</div><div class="meta-val">${fmtVol(lastVol)}</div></div>
+          <div class="meta-item"><div class="meta-label">5日均线</div><div class="meta-val">${ma5.toFixed(2)}</div></div>
+          <div class="meta-item"><div class="meta-label">最新交易日</div><div class="meta-val">${fmtDate(times[n-1])}</div></div>
+        </div>
+      </div>
+
+      <div class="section-title">六大条件筛选结果</div>
+      <div class="cond-list">
+    `;
+    conditions.forEach(c=>{
+      let status, tagCls, tagText;
+      if(c.warn){ status='warn'; tagCls='tag-warn'; tagText='待确认'; }
+      else if(c.pass){ status='pass'; tagCls='tag-pass'; tagText='通过'; }
+      else { status='fail'; tagCls='tag-fail'; tagText='不通过'; }
+      html += `
+        <div class="cond ${status}">
+          <div class="cond-icon">${c.icon}</div>
+          <div class="cond-body">
+            <div class="cond-title">条件${c.id}：${c.title}</div>
+            <div class="cond-desc">${c.desc}</div>
+            <div class="cond-detail">${c.detail}</div>
+          </div>
+          <div class="cond-tag ${tagCls}">${tagText}</div>
+        </div>
+      `;
+    });
+
+    // 条件6 手动确认
+    html += `
+      <div class="manual-box">
+        <div class="m-title">🏦 条件6 手动确认（北向资金 & 机构数）</div>
+        <div class="manual-row">
+          <label><input type="checkbox" id="m_north"> 确认有北向资金净流入</label>
+          <label><input type="checkbox" id="m_inst"> 确认机构持仓家数 > 5</label>
+        </div>
+        <button onclick="recheckC6()" style="background:linear-gradient(135deg,var(--warn),#e67e22);color:#fff;border:none;border-radius:10px;padding:10px 18px;font-size:13px;font-weight:600;cursor:pointer">确认并重新评估</button>
+        <div id="c6Result" style="font-size:12px;color:var(--text2);margin-top:8px"></div>
+      </div>
+    `;
+
+    // 结论
+    const verdictMsg = autoPass >= 4 ? "技术形态较优，关注条件6确认后可进一步跟踪" :
+                       autoPass >= 3 ? "部分条件满足，需结合更多信号综合判断" :
+                       "多数条件不满足，暂不符合选股策略";
+    const verdictColor = autoPass >= 4 ? 'var(--up)' : autoPass >= 3 ? 'var(--warn)' : 'var(--text2)';
+
+    html += `
+      <div class="verdict">
+        <div class="verdict-label">自动条件匹配度（5项核心指标）</div>
+        <div class="verdict-score" style="color:${verdictColor}">${autoPass}<span style="font-size:18px;color:var(--text2)"> / 5</span></div>
+        <div class="verdict-msg">${verdictMsg}</div>
+        <div class="signal-row">
+          <div class="signal-pill ${c4?'bg-up':'bg-down'}" style="${c4?'':'opacity:.6'}">主力建仓：${c4?'✓ 有信号':'✗ 不明显'}</div>
+          <div class="signal-pill ${c5?'bg-up':'bg-down'}" style="${c5?'':'opacity:.6'}">洗盘结束：${c5?'✓ 有信号':'✗ 不明显'}</div>
+        </div>
+      </div>
+
+      <div class="chart-card">
+        <h3>近20日 K线 & 成交量</h3>
+        <canvas id="kchart" width="680" height="300"></canvas>
+      </div>
+    `;
+
+    result.innerHTML = html;
+    result.classList.add('show');
+
+    // 画K线图
+    drawChart(times.slice(-20), opens.slice(-20), highs.slice(-20), lows.slice(-20), closes.slice(-20), volumes.slice(-20), ma5, n);
+
+  }catch(e){
+    result.classList.add('show');
+    result.innerHTML = `<div style="background:var(--card);border:1px solid var(--border);border-radius:16px;padding:24px;text-align:center;color:var(--fail)">
+      <div style="font-size:32px;margin-bottom:10px">⚠️</div>
+      <div style="font-size:15px;font-weight:600">分析失败</div>
+      <div style="font-size:13px;color:var(--text2);margin-top:8px">${e.message}<br>请检查股票代码是否正确，或稍后重试</div>
+    </div>`;
+  }finally{
+    loading.style.display = 'none';
+    btn.disabled = false;
+  }
+}
+
+// 重新评估条件6
+function recheckC6(){
+  const north = document.getElementById('m_north').checked;
+  const inst = document.getElementById('m_inst').checked;
+  const c6ok = north && inst;
+  const res = document.getElementById('c6Result');
+  if(c6ok){
+    res.innerHTML = `<span style="color:var(--pass);font-weight:600">✓ 条件6已确认通过！全部6项条件均满足。</span>`;
+  }else{
+    const miss = [];
+    if(!north) miss.push("北向资金");
+    if(!inst) miss.push("机构数>5");
+    res.innerHTML = `<span style="color:var(--warn)">还需确认：${miss.join('、')}</span>`;
+  }
+}
+
+// 手绘K线图（无外部依赖）
+function drawChart(times, opens, highs, lows, closes, volumes, ma5, totalN){
+  const canvas = document.getElementById('kchart');
+  if(!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const dpr = window.devicePixelRatio || 1;
+  const W = canvas.clientWidth, H = 300;
+  canvas.width = W * dpr; canvas.height = H * dpr;
+  ctx.scale(dpr, dpr);
+
+  const padL=36, padR=10, padT=14, padB=60;
+  const chartH = H - padT - padB;
+  const volH = 50;
+  const kH = chartH - volH - 10;
+  const chartW = W - padL - padR;
+  const n = times.length;
+  const barW = chartW / n;
+  const candleW = Math.max(3, barW * 0.6);
+
+  // 价格范围
+  let minP=Infinity, maxP=-Infinity;
+  for(let i=0;i<n;i++){ minP=Math.min(minP,lows[i]); maxP=Math.max(maxP,highs[i]); }
+  const padP = (maxP-minP)*0.1;
+  minP -= padP; maxP += padP;
+  const priceRange = maxP-minP;
+
+  // 量范围
+  let maxV = 0;
+  for(let i=0;i<n;i++) maxV=Math.max(maxV,volumes[i]);
+
+  const yPrice = p => padT + (maxP-p)/priceRange * kH;
+  const yVol = v => padT + kH + 10 + volH - (v/maxV)*volH;
+
+  // 网格 & 价格刻度
+  ctx.strokeStyle = '#2a3040'; ctx.lineWidth = 1;
+  ctx.fillStyle = '#9aa3b2'; ctx.font = '10px sans-serif';
+  for(let i=0;i<=4;i++){
+    const p = maxP - priceRange*i/4;
+    const y = yPrice(p);
+    ctx.beginPath(); ctx.moveTo(padL,y); ctx.lineTo(W-padR,y); ctx.stroke();
+    ctx.textAlign='right'; ctx.fillText(p.toFixed(2), padL-4, y+3);
+  }
+
+  // 量刻度
+  ctx.fillStyle='#9aa3b2'; ctx.textAlign='right';
+  ctx.fillText(fmtVol(maxV), padL-4, yVol(maxV)+3);
+  ctx.fillText('0', padL-4, yVol(0)+3);
+
+  // 画K线
+  for(let i=0;i<n;i++){
+    const x = padL + i*barW + barW/2;
+    const up = closes[i] >= opens[i];
+    const color = up ? '#e74c3c' : '#27ae60';
+    ctx.strokeStyle = color; ctx.fillStyle = color;
+    // 影线
+    ctx.beginPath(); ctx.moveTo(x, yPrice(highs[i])); ctx.lineTo(x, yPrice(lows[i])); ctx.stroke();
+    // 实体
+    const yo = yPrice(opens[i]), yc = yPrice(closes[i]);
+    const bodyTop = Math.min(yo,yc), bodyH = Math.max(1, Math.abs(yc-yo));
+    ctx.fillRect(x-candleW/2, bodyTop, candleW, bodyH);
+    // 量
+    ctx.globalAlpha = 0.7;
+    ctx.fillRect(x-candleW/2, yVol(volumes[i]), candleW, yVol(0)-yVol(volumes[i]));
+    ctx.globalAlpha = 1;
+    // 日期
+    if(i%4===0 || i===n-1){
+      ctx.fillStyle='#9aa3b2'; ctx.textAlign='center';
+      ctx.fillText(fmtDate(times[i]), x, H-10);
+    }
+  }
+}
+
+// 回车触发
+document.getElementById('codeInput').addEventListener('keydown', e=>{
+  if(e.key==='Enter') analyze();
+});
+
+// 示例填充
+document.getElementById('codeInput').value = '600519';
+</script>
+</body>
+</html>
