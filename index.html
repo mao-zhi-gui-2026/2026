@@ -1,0 +1,858 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#1e3a5f">
+<title>A股智能选股 - 主力底部建仓雷达</title>
+<style>
+/* ========== 全局重置与基础变量 ========== */
+:root{
+  --bg:#0f1925;
+  --bg-card:#1a2638;
+  --bg-card-2:#22324a;
+  --border:#2a3b55;
+  --text:#e8eef5;
+  --text-dim:#8b9bb4;
+  --text-muted:#5a6b85;
+  --red:#ff4d4f;
+  --red-bg:rgba(255,77,79,.12);
+  --green:#00d68f;
+  --green-bg:rgba(0,214,143,.12);
+  --gold:#ffb800;
+  --gold-bg:rgba(255,184,0,.12);
+  --blue:#3b82f6;
+  --blue-bg:rgba(59,130,246,.12);
+  --radius:14px;
+  --shadow:0 4px 24px rgba(0,0,0,.3);
+}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{height:100%}
+body{
+  font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif;
+  background:var(--bg);
+  color:var(--text);
+  line-height:1.6;
+  font-size:15px;
+  -webkit-font-smoothing:antialiased;
+  overflow-x:hidden;
+}
+a{color:var(--blue);text-decoration:none}
+
+/* ========== 布局容器 ========== */
+.wrap{max-width:680px;margin:0 auto;padding:0 16px 60px}
+
+/* ========== 顶部标题区 ========== */
+.header{
+  background:linear-gradient(135deg,#1e3a5f 0%,#2a1a4f 100%);
+  padding:28px 16px 24px;
+  text-align:center;
+  position:relative;
+  overflow:hidden;
+}
+.header::after{
+  content:'';
+  position:absolute;inset:0;
+  background:radial-gradient(circle at 30% 20%,rgba(0,214,143,.08) 0%,transparent 50%),
+             radial-gradient(circle at 70% 80%,rgba(255,184,0,.06) 0%,transparent 50%);
+  pointer-events:none;
+}
+.header h1{
+  font-size:22px;font-weight:700;letter-spacing:.5px;
+  position:relative;z-index:1;
+}
+.header .sub{
+  font-size:12px;color:var(--text-dim);margin-top:6px;
+  position:relative;z-index:1;
+}
+.header .badge{
+  display:inline-block;font-size:11px;
+  background:var(--green-bg);color:var(--green);
+  padding:2px 10px;border-radius:20px;margin-top:10px;
+  border:1px solid rgba(0,214,143,.25);
+  position:relative;z-index:1;
+}
+
+/* ========== 卡片通用样式 ========== */
+.card{
+  background:var(--bg-card);
+  border:1px solid var(--border);
+  border-radius:var(--radius);
+  padding:18px;
+  margin-top:14px;
+  box-shadow:var(--shadow);
+}
+.card-title{
+  font-size:13px;font-weight:600;color:var(--text-dim);
+  margin-bottom:12px;display:flex;align-items:center;gap:6px;
+  text-transform:uppercase;letter-spacing:.5px;
+}
+.card-title .dot{width:6px;height:6px;border-radius:50%;background:var(--blue)}
+
+/* ========== API Key 配置 ========== */
+.key-row{display:flex;gap:10px;align-items:center}
+.key-input{
+  flex:1;
+  background:var(--bg);
+  border:1px solid var(--border);
+  border-radius:10px;
+  padding:12px 14px;
+  color:var(--text);
+  font-size:14px;
+  outline:none;
+  transition:border-color .2s;
+  width:100%;
+}
+.key-input:focus{border-color:var(--blue)}
+.key-input::placeholder{color:var(--text-muted)}
+.key-toggle{
+  background:var(--bg-card-2);border:1px solid var(--border);
+  color:var(--text-dim);border-radius:10px;padding:12px 14px;
+  font-size:13px;cursor:pointer;white-space:nowrap;transition:.2s;
+}
+.key-toggle.active{background:var(--green-bg);color:var(--green);border-color:rgba(0,214,143,.3)}
+.key-hint{font-size:11px;color:var(--text-muted);margin-top:8px;line-height:1.5}
+.key-hint a{font-size:11px}
+
+/* ========== 输入与按钮 ========== */
+.search-row{display:flex;gap:10px;align-items:stretch}
+.code-input{
+  flex:1;
+  background:var(--bg);
+  border:1px solid var(--border);
+  border-radius:12px;
+  padding:14px 16px;
+  color:var(--text);
+  font-size:18px;font-weight:600;
+  letter-spacing:1px;
+  outline:none;
+  transition:border-color .2s;
+  text-align:center;
+}
+.code-input:focus{border-color:var(--gold)}
+.code-input::placeholder{color:var(--text-muted);font-weight:400;font-size:15px;letter-spacing:0}
+.analyze-btn{
+  background:linear-gradient(135deg,#00d68f 0%,#00b377 100%);
+  color:#001a14;
+  border:none;border-radius:12px;
+  padding:0 28px;font-size:15px;font-weight:700;
+  cursor:pointer;transition:.2s;
+  white-space:nowrap;
+  display:flex;align-items:center;gap:6px;
+}
+.analyze-btn:hover{filter:brightness(1.1)}
+.analyze-btn:active{transform:scale(.97)}
+.analyze-btn:disabled{opacity:.5;cursor:not-allowed;filter:none}
+.quick-codes{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}
+.quick-code{
+  font-size:12px;background:var(--bg-card-2);
+  border:1px solid var(--border);color:var(--text-dim);
+  padding:5px 12px;border-radius:8px;cursor:pointer;transition:.2s;
+}
+.quick-code:hover{border-color:var(--gold);color:var(--gold)}
+
+/* ========== 加载状态 ========== */
+.loading{
+  display:none;text-align:center;padding:40px 0;
+}
+.loading.show{display:block}
+.spinner{
+  width:40px;height:40px;border:3px solid var(--border);
+  border-top-color:var(--green);border-radius:50%;
+  margin:0 auto 14px;animation:spin .8s linear infinite;
+}
+@keyframes spin{to{transform:rotate(360deg)}}
+.loading p{color:var(--text-dim);font-size:13px}
+
+/* ========== 结果区 ========== */
+.results{display:none}
+.results.show{display:block}
+
+/* 综合结论 */
+.verdict{
+  text-align:center;padding:24px 16px;border-radius:var(--radius);
+  margin-top:14px;position:relative;overflow:hidden;
+}
+.verdict.pass{
+  background:linear-gradient(135deg,rgba(0,214,143,.15) 0%,rgba(0,214,143,.05) 100%);
+  border:1px solid rgba(0,214,143,.3);
+}
+.verdict.fail{
+  background:linear-gradient(135deg,rgba(255,77,79,.12) 0%,rgba(255,77,79,.03) 100%);
+  border:1px solid rgba(255,77,79,.25);
+}
+.verdict .icon{font-size:40px;line-height:1}
+.verdict .title{font-size:20px;font-weight:700;margin-top:8px}
+.verdict.pass .title{color:var(--green)}
+.verdict.fail .title{color:var(--red)}
+.verdict .desc{font-size:12px;color:var(--text-dim);margin-top:6px}
+
+/* 关键指标网格 */
+.metrics{
+  display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-top:14px;
+}
+.metric{
+  background:var(--bg-card-2);border:1px solid var(--border);
+  border-radius:10px;padding:14px;
+}
+.metric .label{font-size:11px;color:var(--text-muted);margin-bottom:6px}
+.metric .value{font-size:20px;font-weight:700;font-family:'SF Mono',Consolas,monospace}
+.metric .value.red{color:var(--red)}
+.metric .value.green{color:var(--green)}
+.metric .value.gold{color:var(--gold)}
+.metric .value.blue{color:var(--blue)}
+.metric .sub{font-size:11px;color:var(--text-dim);margin-top:2px}
+
+/* 条件清单 */
+.conditions{margin-top:14px}
+.cond-item{
+  display:flex;gap:12px;align-items:flex-start;
+  padding:14px;border-radius:10px;margin-bottom:8px;
+  background:var(--bg-card-2);border:1px solid var(--border);
+  transition:.2s;
+}
+.cond-item.pass{border-color:rgba(0,214,143,.3);background:var(--green-bg)}
+.cond-item.fail{border-color:rgba(255,77,79,.2)}
+.cond-icon{
+  width:26px;height:26px;border-radius:50%;flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;
+  font-size:14px;font-weight:700;margin-top:1px;
+}
+.cond-item.pass .cond-icon{background:var(--green);color:#001a14}
+.cond-item.fail .cond-icon{background:var(--red);color:#fff}
+.cond-body{flex:1;min-width:0}
+.cond-name{font-size:14px;font-weight:600;margin-bottom:4px}
+.cond-desc{font-size:12px;color:var(--text-dim);line-height:1.5}
+.cond-detail{font-size:11px;color:var(--text-muted);margin-top:6px;padding-top:6px;border-top:1px dashed var(--border)}
+.cond-detail b{color:var(--gold)}
+
+/* 信号标签 */
+.signal-tags{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+.tag{
+  font-size:11px;padding:4px 10px;border-radius:6px;
+  border:1px solid var(--border);background:var(--bg-card-2);
+  color:var(--text-dim);
+}
+.tag.red{color:var(--red);background:var(--red-bg);border-color:rgba(255,77,79,.25)}
+.tag.green{color:var(--green);background:var(--green-bg);border-color:rgba(0,214,143,.25)}
+.tag.gold{color:var(--gold);background:var(--gold-bg);border-color:rgba(255,184,0,.25)}
+.tag.blue{color:var(--blue);background:var(--blue-bg);border-color:rgba(59,130,246,.25)}
+
+/* 错误提示 */
+.error-box{
+  display:none;background:var(--red-bg);border:1px solid rgba(255,77,79,.3);
+  border-radius:var(--radius);padding:16px;margin-top:14px;
+}
+.error-box.show{display:block}
+.error-box h3{color:var(--red);font-size:14px;margin-bottom:8px}
+.error-box p{font-size:12px;color:var(--text-dim);line-height:1.6}
+.error-box code{
+  background:var(--bg);padding:2px 6px;border-radius:4px;
+  font-size:11px;color:var(--gold);
+}
+
+/* 部署说明 */
+.guide{margin-top:14px}
+.guide ol{padding-left:18px}
+.guide li{font-size:12px;color:var(--text-dim);margin-bottom:8px;line-height:1.6}
+.guide li b{color:var(--text)}
+.guide .step-num{color:var(--gold);font-weight:700}
+.guide .tip{
+  background:var(--blue-bg);border:1px solid rgba(59,130,246,.25);
+  border-radius:8px;padding:10px 12px;margin-top:10px;
+  font-size:11px;color:var(--text-dim);
+}
+.guide .tip b{color:var(--blue)}
+
+/* 页脚 */
+.footer{
+  text-align:center;padding:24px 16px;
+  font-size:11px;color:var(--text-muted);line-height:1.6;
+}
+.footer .disclaimer{
+  background:var(--bg-card);border:1px solid var(--border);
+  border-radius:8px;padding:10px 14px;margin-bottom:12px;
+  font-size:10px;color:var(--text-muted);
+}
+
+/* ========== 响应式 ========== */
+@media(max-width:380px){
+  .metrics{grid-template-columns:1fr}
+  .header h1{font-size:19px}
+  .code-input{font-size:16px;padding:12px}
+  .analyze-btn{padding:0 20px;font-size:14px}
+}
+@media(min-width:560px){
+  .metrics{grid-template-columns:repeat(3,1fr)}
+}
+
+/* 动画入场 */
+.fade-in{animation:fadeIn .4s ease}
+@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+</style>
+</head>
+<body>
+
+<!-- ===== 顶部标题 ===== -->
+<div class="header">
+  <h1>📈 A股智能选股雷达</h1>
+  <div class="sub">主力底部建仓 · 洗盘结束 · 即将拉升</div>
+  <div class="badge">TickFlow 实时数据驱动</div>
+</div>
+
+<div class="wrap">
+
+  <!-- ===== API Key 配置 ===== -->
+  <div class="card">
+    <div class="card-title"><span class="dot"></span>TickFlow API Key 配置</div>
+    <div class="key-row">
+      <input type="password" class="key-input" id="apiKey" placeholder="粘贴你的 TickFlow API Key" autocomplete="off">
+      <button class="key-toggle" id="keyToggle" onclick="toggleKeySave()">保存</button>
+    </div>
+    <div class="key-hint">
+      免费 API Key：<a href="https://tickflow.org/auth/register/" target="_blank">tickflow.org 注册获取</a> · 注册即送免费额度，无需信用卡 · Key 保存在本地浏览器
+    </div>
+  </div>
+
+  <!-- ===== 选股输入 ===== -->
+  <div class="card">
+    <div class="card-title"><span class="dot" style="background:var(--gold)"></span>输入股票代码开始分析</div>
+    <div class="search-row">
+      <input type="text" class="code-input" id="stockCode" placeholder="如 000001 / 600519" inputmode="numeric" maxlength="6">
+      <button class="analyze-btn" id="analyzeBtn" onclick="runAnalysis()">开始分析</button>
+    </div>
+    <div class="quick-codes">
+      <span class="quick-code" onclick="quickFill('600519')">600519 茅台</span>
+      <span class="quick-code" onclick="quickFill('000001')">000001 平安</span>
+      <span class="quick-code" onclick="quickFill('300750')">300750 宁德</span>
+      <span class="quick-code" onclick="quickFill('002594')">002594 比亚迪</span>
+    </div>
+  </div>
+
+  <!-- ===== 加载中 ===== -->
+  <div class="loading" id="loading">
+    <div class="spinner"></div>
+    <p id="loadingText">正在获取行情数据...</p>
+  </div>
+
+  <!-- ===== 错误提示 ===== -->
+  <div class="error-box" id="errorBox">
+    <h3>⚠️ 分析出错</h3>
+    <p id="errorText"></p>
+  </div>
+
+  <!-- ===== 结果区 ===== -->
+  <div class="results" id="results"></div>
+
+  <!-- ===== 部署说明 ===== -->
+  <div class="card guide">
+    <div class="card-title"><span class="dot" style="background:var(--green)"></span>部署到腾讯云 CloudBase（获取永久链接）</div>
+    <ol>
+      <li><span class="step-num">①</span> 打开腾讯云官网 <a href="https://tcb.cloud.tencent.com/dev#/static-hosting" target="_blank">CloudBase 静态托管</a>，登录腾讯云账号（需实名认证）</li>
+      <li><span class="step-num">②</span> 创建云开发环境（选<b>上海</b>地域，首次免费创建）</li>
+      <li><span class="step-num">③</span> 进入「静态网站托管」→ 点击<b>上传文件</b></li>
+      <li><span class="step-num">④</span> 将本网页保存为 <code style="background:var(--bg);padding:2px 6px;border-radius:4px;color:var(--gold)">index.html</code> 上传</li>
+      <li><span class="step-num">⑤</span> 上传后即可获得永久访问链接（如 <code style="background:var(--bg);padding:2px 6px;border-radius:4px;color:var(--gold)">https://xxx.tcloudbaseapp.com</code>）</li>
+      <li><span class="step-num">⑥</span> 该链接可直接在<b>微信中打开</b>并转发给他人</li>
+    </ol>
+    <div class="tip"><b>💡 手机操作：</b>在手机浏览器打开本网页 → 长按页面 → 「存储到文件」或用备忘录保存 → 上传到 CloudBase。也可保存到手机备忘录后直接复制代码。</div>
+  </div>
+
+  <!-- ===== 页脚 ===== -->
+  <div class="footer">
+    <div class="disclaimer">
+      ⚠️ 免责声明：本工具仅用于学习研究，不构成任何投资建议。股市有风险，投资需谨慎。数据来源 TickFlow API，可能存在延迟，请以交易所实时数据为准。
+    </div>
+    Powered by TickFlow · 腾讯云 CloudBase · TRAE
+  </div>
+
+</div>
+
+<script>
+/* ============================================================
+ * A股智能选股雷达 - 核心逻辑
+ * 数据源：TickFlow API (https://api.tickflow.org/v1)
+ * ============================================================ */
+
+const API_BASE = 'https://api.tickflow.org/v1';
+
+/* ---------- 工具函数 ---------- */
+
+// 股票代码转 TickFlow 格式（000001 -> 000001.SZ, 600519 -> 600519.SH）
+function toSymbol(code){
+  code = String(code).trim().replace(/\s/g,'');
+  if(!/^\d{6}$/.test(code)) return null;
+  // 6开头 -> 上海SH, 0/3开头 -> 深圳SZ, 其余(4/8/920等) -> 北京BJ
+  if(code.startsWith('6')) return code + '.SH';
+  if(code.startsWith('0') || code.startsWith('3')) return code + '.SZ';
+  return code + '.BJ';
+}
+
+// 格式化金额（元 -> 亿/万）
+function fmtAmount(v){
+  if(v == null || isNaN(v)) return '--';
+  if(v >= 1e8) return (v/1e8).toFixed(2) + '亿';
+  if(v >= 1e4) return (v/1e4).toFixed(2) + '万';
+  return v.toFixed(0);
+}
+// 格式化价格
+function fmtPrice(v){
+  if(v == null || isNaN(v)) return '--';
+  return Number(v).toFixed(2);
+}
+// 格式化百分比（change_pct: 0.01 = 1%）
+function fmtPct(v, fromDecimal){
+  if(v == null || isNaN(v)) return '--';
+  let p = fromDecimal ? v * 100 : v;
+  return p.toFixed(2) + '%';
+}
+// 格式化成交量
+function fmtVol(v){
+  if(v == null || isNaN(v)) return '--';
+  if(v >= 1e8) return (v/1e8).toFixed(2) + '亿股';
+  if(v >= 1e4) return (v/1e4).toFixed(2) + '万股';
+  return v.toFixed(0) + '股';
+}
+
+/* ---------- API Key 管理 ---------- */
+
+function getApiKey(){
+  // 优先从输入框，其次 localStorage
+  let key = document.getElementById('apiKey').value.trim();
+  if(key) return key;
+  return localStorage.getItem('tf_api_key') || '';
+}
+function toggleKeySave(){
+  const input = document.getElementById('apiKey');
+  const btn = document.getElementById('keyToggle');
+  const key = input.value.trim();
+  if(!key){ alert('请先输入 API Key'); return; }
+  localStorage.setItem('tf_api_key', key);
+  btn.textContent = '已保存';
+  btn.classList.add('active');
+  setTimeout(()=>{ btn.textContent='保存'; btn.classList.remove('active'); },1500);
+}
+// 初始化时恢复保存的 Key
+(function initKey(){
+  const saved = localStorage.getItem('tf_api_key');
+  if(saved) document.getElementById('apiKey').value = saved;
+})();
+
+/* ---------- TickFlow API 调用 ---------- */
+
+async function fetchQuote(symbol, apiKey){
+  const url = `${API_BASE}/quotes?symbols=${encodeURIComponent(symbol)}`;
+  const res = await fetch(url, { headers: { 'x-api-key': apiKey } });
+  if(!res.ok){
+    const err = await res.json().catch(()=>({}));
+    throw new Error(`行情请求失败(${res.status}): ${err.message || res.statusText}`);
+  }
+  const json = await res.json();
+  return json.data && json.data[0] ? json.data[0] : null;
+}
+
+async function fetchKlines(symbol, apiKey, count=20){
+  const url = `${API_BASE}/klines?symbol=${encodeURIComponent(symbol)}&period=1d&count=${count}&adjust=forward`;
+  const res = await fetch(url, { headers: { 'x-api-key': apiKey } });
+  if(!res.ok){
+    const err = await res.json().catch(()=>({}));
+    throw new Error(`K线请求失败(${res.status}): ${err.message || res.statusText}`);
+  }
+  const json = await res.json();
+  const d = json.data;
+  if(!d || !d.timestamp || d.timestamp.length === 0) return [];
+  // 紧凑列式 -> 对象数组（按时间正序）
+  const bars = [];
+  for(let i=0; i<d.timestamp.length; i++){
+    bars.push({
+      ts: d.timestamp[i],
+      open: d.open[i],
+      high: d.high[i],
+      low: d.low[i],
+      close: d.close[i],
+      volume: d.volume[i],
+      amount: d.amount[i],
+      prev_close: d.prev_close ? d.prev_close[i] : null,
+    });
+  }
+  return bars; // 最旧 -> 最新
+}
+
+/* ---------- 五大筛选条件算法 ---------- */
+
+/**
+ * 条件1：股价在5-100元之间
+ */
+function checkCond1(quote){
+  const price = quote.last_price;
+  const pass = price >= 5 && price <= 100;
+  return {
+    pass, price,
+    detail: `当前价 ${fmtPrice(price)} 元 → ${pass?'在':'不在'} 5~100 元区间`
+  };
+}
+
+/**
+ * 条件2：今日涨幅在2%~7%之间
+ * ext.change_pct: 0.01 = 1%
+ */
+function checkCond2(quote){
+  let pct = null;
+  let rawRate = null; // 原始小数形式(0.02=2%)，避免浮点误差
+  // 优先用 ext.change_pct，否则用 last_price/prev_close 计算
+  if(quote.ext && quote.ext.change_pct != null){
+    rawRate = quote.ext.change_pct;
+  } else if(quote.prev_close){
+    rawRate = (quote.last_price - quote.prev_close) / quote.prev_close;
+  }
+  if(rawRate != null) pct = rawRate * 100;
+  // 用原始小数比较，规避 0.07*100=7.000000001 的浮点问题
+  const pass = rawRate != null && rawRate >= 0.02 && rawRate <= 0.07;
+  return {
+    pass, pct,
+    detail: `今日涨幅 ${pct!=null?fmtPct(pct):'--'} → ${pass?'在':'不在'} 2%~7% 区间`
+  };
+}
+
+/**
+ * 条件3：成交额 > 1亿元
+ */
+function checkCond3(quote){
+  const amt = quote.amount;
+  const pass = amt != null && amt >= 1e8;
+  return {
+    pass, amount: amt,
+    detail: `今日成交额 ${fmtAmount(amt)} → ${pass?'≥':'<'} 1亿元`
+  };
+}
+
+/**
+ * 条件4：最近5个交易日，至少3天成交量明显放大（>前10日均量1.3倍），且累计涨幅<5%
+ * 识别主力底部建仓痕迹
+ */
+function checkCond4(bars){
+  // bars 最旧->最新，bars[last] = 今天
+  if(bars.length < 16){
+    return { pass:false, detail:'K线数据不足（需至少16根）' };
+  }
+  const n = bars.length;
+  // 最近5个交易日（含今天）
+  const recent5 = bars.slice(n - 5);
+  // 前10个交易日（5日窗口之前）
+  const base10 = bars.slice(n - 15, n - 5);
+  const avgVol10 = base10.reduce((s,b)=>s+b.volume,0) / base10.length;
+  // 统计放量天数
+  let bigVolDays = 0;
+  const volDetails = [];
+  recent5.forEach((b,i)=>{
+    const isBig = b.volume > avgVol10 * 1.3;
+    if(isBig) bigVolDays++;
+    volDetails.push(`D${i+1}:${fmtVol(b.volume)}${isBig?'(放量)':''}`);
+  });
+  // 累计涨幅（5日窗口起点到终点）
+  const startClose = bars[n-6].close; // 5日窗口前一天的收盘
+  const endClose = bars[n-1].close;   // 今天收盘
+  const cumGain = (endClose - startClose) / startClose * 100;
+  // 判定
+  const pass = bigVolDays >= 3 && cumGain < 5;
+  return {
+    pass, bigVolDays, avgVol10, cumGain,
+    detail: `5日内${bigVolDays}天放量(需≥3天) · 累计涨幅${cumGain.toFixed(2)}%(需<5%) · [${volDetails.join(' ')}]`
+  };
+}
+
+/**
+ * 条件5：最近3个交易日，出现"长下影线"或"缩量横盘"，且今日站上5日均线
+ * 判断洗盘结束、即将拉升
+ */
+function checkCond5(bars){
+  if(bars.length < 6){
+    return { pass:false, detail:'K线数据不足（需至少6根）' };
+  }
+  const n = bars.length;
+  // 最近3个交易日（含今天）
+  const recent3 = bars.slice(n - 3);
+  // 5日均线（含今天）
+  const last5 = bars.slice(n - 5);
+  const ma5 = last5.reduce((s,b)=>s+b.close,0) / 5;
+  const todayClose = bars[n-1].close;
+  const aboveMA5 = todayClose > ma5;
+
+  // 检查形态
+  let hasLongShadow = false;
+  let hasShrinkFlat = false;
+  const patterns = [];
+
+  recent3.forEach((b,i)=>{
+    const body = Math.abs(b.close - b.open);
+    const lowerShadow = Math.min(b.open, b.close) - b.low;
+    const upperShadow = b.high - Math.max(b.open, b.close);
+    const total = b.high - b.low;
+    // 长下影线：下影线 >= 2倍实体 且 下影线占总长>40%
+    const isLongShadow = lowerShadow > body * 2 && total > 0 && (lowerShadow/total) > 0.4 && body < total * 0.4;
+    if(isLongShadow){
+      hasLongShadow = true;
+      patterns.push(`D${i+1}长下影`);
+    }
+    // 缩量横盘：振幅<3% 且 成交量较前一日萎缩
+    const prevBar = bars[n-3+i-1];
+    if(prevBar){
+      const amplitude = (b.high - b.low) / prevBar.close * 100;
+      const volShrink = b.volume < prevBar.volume;
+      if(amplitude < 3 && volShrink){
+        hasShrinkFlat = true;
+        patterns.push(`D${i+1}缩量横盘`);
+      }
+    }
+  });
+
+  const hasPattern = hasLongShadow || hasShrinkFlat;
+  const pass = hasPattern && aboveMA5;
+  return {
+    pass, ma5, aboveMA5, hasLongShadow, hasShrinkFlat,
+    detail: `形态: ${patterns.length?patterns.join('/'):'无明显信号'} · 今日${todayClose.toFixed(2)} ${aboveMA5?'站上':'未站上'}MA5(${ma5.toFixed(2)})`
+  };
+}
+
+/* ---------- 主分析流程 ---------- */
+
+async function runAnalysis(){
+  const codeInput = document.getElementById('stockCode').value.trim();
+  const apiKey = getApiKey();
+
+  // 校验输入
+  if(!codeInput){ showError('请输入股票代码（6位数字）'); return; }
+  const symbol = toSymbol(codeInput);
+  if(!symbol){ showError('股票代码格式错误，请输入6位数字（如 000001、600519）'); return; }
+  if(!apiKey){
+    showError('请先配置 TickFlow API Key。<br>免费注册：<a href="https://tickflow.org/auth/register/" target="_blank">tickflow.org</a>');
+    return;
+  }
+
+  // UI 状态切换
+  hideError();
+  document.getElementById('results').classList.remove('show');
+  document.getElementById('loading').classList.add('show');
+  setBtnLoading(true);
+  setLoadingText('正在获取实时行情...');
+
+  try{
+    // 1. 获取实时行情
+    const quote = await fetchQuote(symbol, apiKey);
+    if(!quote){
+      throw new Error('未找到该股票行情，请检查代码是否正确。');
+    }
+
+    setLoadingText('正在获取K线历史数据...');
+
+    // 2. 获取K线数据（20根日K，前复权）
+    const bars = await fetchKlines(symbol, apiKey, 20);
+    if(bars.length < 6){
+      throw new Error('K线历史数据不足，无法完成分析。');
+    }
+
+    setLoadingText('正在执行五大条件筛选...');
+
+    // 3. 执行五大条件判断
+    const c1 = checkCond1(quote);
+    const c2 = checkCond2(quote);
+    const c3 = checkCond3(quote);
+    const c4 = checkCond4(bars);
+    const c5 = checkCond5(bars);
+
+    const conditions = [c1,c2,c3,c4,c5];
+    const allPass = conditions.every(c => c.pass);
+
+    // 4. 计算辅助信号
+    const stockName = (quote.ext && quote.ext.name) ? quote.ext.name : symbol;
+    const signals = buildSignals(quote, bars, c4, c5);
+
+    // 5. 渲染结果
+    renderResults({
+      symbol, stockName, quote, bars,
+      conditions, allPass, signals
+    });
+
+  }catch(err){
+    let msg = err.message || String(err);
+    // CORS 或网络错误友好提示
+    if(err instanceof TypeError && err.message.includes('Failed to fetch')){
+      msg = '网络请求失败，可能是以下原因：<br>1. API Key 无效或未填写<br>2. 网络连接问题<br>3. 浏览器跨域(CORS)限制<br><br>请检查 API Key 是否正确，或稍后重试。';
+    }
+    showError(msg);
+  }finally{
+    document.getElementById('loading').classList.remove('show');
+    setBtnLoading(false);
+  }
+}
+
+// 构建主力资金/洗盘状态信号标签
+function buildSignals(quote, bars, c4, c5){
+  const tags = [];
+  // 主力建仓信号
+  if(c4.pass){
+    tags.push({text:'主力建仓',cls:'green'});
+  } else if(c4.bigVolDays >= 2){
+    tags.push({text:'温和吸筹',cls:'gold'});
+  } else {
+    tags.push({text:'建仓不明显',cls:''});
+  }
+  // 洗盘状态
+  if(c5.hasLongShadow){
+    tags.push({text:'长下影(洗盘结束)',cls:'green'});
+  }
+  if(c5.hasShrinkFlat){
+    tags.push({text:'缩量横盘',cls:'gold'});
+  }
+  if(!c5.hasLongShadow && !c5.hasShrinkFlat){
+    tags.push({text:'无明显洗盘',cls:''});
+  }
+  // 趋势
+  if(c5.aboveMA5){
+    tags.push({text:'站上5日线',cls:'blue'});
+  } else {
+    tags.push({text:'破5日线',cls:'red'});
+  }
+  // 换手率
+  if(quote.ext && quote.ext.turnover_rate != null){
+    const tr = quote.ext.turnover_rate * 100;
+    if(tr > 5) tags.push({text:`换手${tr.toFixed(1)}%`,cls:'gold'});
+    else tags.push({text:`换手${tr.toFixed(1)}%`,cls:''});
+  }
+  return tags;
+}
+
+/* ---------- 结果渲染 ---------- */
+
+function renderResults(data){
+  const { symbol, stockName, quote, conditions, allPass, signals } = data;
+  const c1=conditions[0], c2=conditions[1], c3=conditions[2], c4=conditions[3], c5=conditions[4];
+
+  const condNames = [
+    '股价区间(5~100元)',
+    '今日涨幅(2%~7%)',
+    '成交额(>1亿元)',
+    '主力底部建仓',
+    '洗盘结束信号'
+  ];
+
+  const passCount = conditions.filter(c=>c.pass).length;
+
+  let html = '';
+
+  // 综合结论
+  html += `
+    <div class="verdict ${allPass?'pass':'fail'} fade-in">
+      <div class="icon">${allPass?'✅':'❌'}</div>
+      <div class="title">${allPass?'符合全部条件，重点关注！':'暂不符合全部条件'}</div>
+      <div class="desc">${stockName} (${symbol}) · 满足 ${passCount}/5 项条件</div>
+    </div>`;
+
+  // 关键指标
+  const pct = c2.pct;
+  const pctClass = pct > 0 ? 'red' : (pct < 0 ? 'green' : '');
+  html += `
+    <div class="card fade-in">
+      <div class="card-title"><span class="dot" style="background:var(--gold)"></span>关键指标</div>
+      <div class="metrics">
+        <div class="metric">
+          <div class="label">最新价</div>
+          <div class="value gold">${fmtPrice(quote.last_price)}</div>
+          <div class="sub">${stockName}</div>
+        </div>
+        <div class="metric">
+          <div class="label">今日涨幅</div>
+          <div class="value ${pctClass}">${c2.pct!=null?fmtPct(c2.pct):'--'}</div>
+          <div class="sub">${c2.pass?'符合区间':''}</div>
+        </div>
+        <div class="metric">
+          <div class="label">成交额</div>
+          <div class="value ${c3.pass?'green':''}">${fmtAmount(quote.amount)}</div>
+          <div class="sub">${c3.pass?'达标':''}</div>
+        </div>
+        <div class="metric">
+          <div class="label">换手率</div>
+          <div class="value blue">${quote.ext&&quote.ext.turnover_rate!=null?fmtPct(quote.ext.turnover_rate*100):'--'}</div>
+          <div class="sub">活跃度参考</div>
+        </div>
+        <div class="metric">
+          <div class="label">主力资金信号</div>
+          <div class="value ${c4.pass?'green':'gold'}">${c4.pass?'建仓中':'观望'}</div>
+          <div class="sub">${c4.bigVolDays||0}天放量</div>
+        </div>
+        <div class="metric">
+          <div class="label">洗盘状态</div>
+          <div class="value ${c5.pass?'green':'gold'}">${c5.pass?'洗盘结束':'进行中'}</div>
+          <div class="sub">${c5.aboveMA5?'站上5日线':''}</div>
+        </div>
+      </div>
+      <div class="signal-tags">
+        ${signals.map(s=>`<span class="tag ${s.cls}">${s.text}</span>`).join('')}
+      </div>
+    </div>`;
+
+  // 五大条件详情
+  const condDescs = [
+    '股价在5元到100元之间，排除低价股和高价股，聚焦中小盘。',
+    '今日涨幅在2%到7%之间，确认有资金主动拉升，但不过度追高。',
+    '成交额大于1亿元，确保流动性充足，便于主力进出。',
+    '最近5个交易日至少3天放量(超10日均量1.3倍)且累计涨幅<5%，识别主力底部建仓痕迹。',
+    '最近3日出现长下影线或缩量横盘，且今日站上5日均线，判断洗盘结束即将拉升。'
+  ];
+  html += `
+    <div class="card fade-in">
+      <div class="card-title"><span class="dot" style="background:var(--red)"></span>五大筛选条件明细</div>
+      <div class="conditions">`;
+
+  conditions.forEach((c,i)=>{
+    html += `
+      <div class="cond-item ${c.pass?'pass':'fail'}">
+        <div class="cond-icon">${c.pass?'✓':'✗'}</div>
+        <div class="cond-body">
+          <div class="cond-name">${i+1}. ${condNames[i]}</div>
+          <div class="cond-desc">${condDescs[i]}</div>
+          <div class="cond-detail"><b>判定：</b>${c.detail||'--'}</div>
+        </div>
+      </div>`;
+  });
+
+  html += `</div></div>`;
+
+  document.getElementById('results').innerHTML = html;
+  document.getElementById('results').classList.add('show');
+}
+
+/* ---------- UI 辅助函数 ---------- */
+
+function showError(msg){
+  const box = document.getElementById('errorBox');
+  document.getElementById('errorText').innerHTML = msg;
+  box.classList.add('show');
+}
+function hideError(){
+  document.getElementById('errorBox').classList.remove('show');
+}
+function setBtnLoading(loading){
+  const btn = document.getElementById('analyzeBtn');
+  btn.disabled = loading;
+  btn.innerHTML = loading ? '分析中...' : '开始分析';
+}
+function setLoadingText(t){
+  document.getElementById('loadingText').textContent = t;
+}
+function quickFill(code){
+  document.getElementById('stockCode').value = code;
+  runAnalysis();
+}
+
+// 回车触发分析
+document.getElementById('stockCode').addEventListener('keydown', e=>{
+  if(e.key === 'Enter') runAnalysis();
+});
+document.getElementById('apiKey').addEventListener('keydown', e=>{
+  if(e.key === 'Enter') runAnalysis();
+});
+
+</script>
+</body>
+</html>
