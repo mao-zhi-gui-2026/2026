@@ -273,7 +273,9 @@ body {
     <h1>A股智能选股</h1>
     <p>主力底部建仓识别 · 洗盘结束判断</p>
   </div>
-
+  <div style="text-align:center;margin-bottom:16px;">
+    <button onclick="downloadSelf()" style="background:linear-gradient(135deg,#4d9bff,#2563eb);color:#fff;border:none;border-radius:10px;padding:10px 20px;font-size:14px;font-weight:700;cursor:pointer;">⬇ 点击下载此HTML文件</button>
+  </div>
   <div class="input-card">
     <div class="input-row">
       <input type="text" id="codeInput" placeholder="输入股票代码，如 000001 或 600519" maxlength="6" inputmode="numeric">
@@ -340,6 +342,16 @@ body {
 <script>
 /* ========== 工具函数 ========== */
 function $(id) { return document.getElementById(id); }
+function downloadSelf() {
+  var html = '<!DOCTYPE html>\n' + document.documentElement.outerHTML;
+  var blob = new Blob([html], { type: 'text/html;charset=utf-8' });
+  var url = URL.createObjectURL(blob);
+  var a = document.createElement('a');
+  a.href = url; a.download = 'stock-screening.html';
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  setTimeout(function(){ URL.revokeObjectURL(url); }, 1000);
+  alert('文件已开始下载，请在浏览器下载记录里查找 stock-screening.html');
+}
 function fmt(n, d) { return Number(n).toFixed(d || 2); }
 function fmtWan(n) {
   // 成交额(万)转成易读格式
