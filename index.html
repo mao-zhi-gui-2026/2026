@@ -251,6 +251,30 @@ a{color:var(--blue);text-decoration:none}
   font-size:11px;color:var(--gold);
 }
 
+/* 数据源模式卡片 */
+.mode-card{border-color:rgba(0,214,143,.2)}
+.mode-row{display:flex;align-items:center;gap:12px}
+.mode-icon{font-size:24px;width:40px;height:40px;display:flex;align-items:center;justify-content:center;border-radius:10px;flex-shrink:0}
+.mode-icon.free{background:var(--green-bg)}
+.mode-icon.pro{background:var(--gold-bg)}
+.mode-info{flex:1;min-width:0}
+.mode-label{font-size:14px;font-weight:700}
+.mode-label.free{color:var(--green)}
+.mode-label.pro{color:var(--gold)}
+.mode-desc{font-size:11px;color:var(--text-dim);margin-top:2px}
+.mode-toggle{
+  font-size:12px;color:var(--blue);cursor:pointer;
+  margin-top:10px;padding:6px 0;user-select:none;
+}
+.mode-toggle:hover{text-decoration:underline}
+.data-time{
+  font-size:11px;color:var(--text-muted);margin-top:8px;
+  padding:6px 10px;background:var(--bg);border-radius:6px;
+  display:none;
+}
+.data-time.show{display:block}
+.data-time.warn{color:var(--gold);background:var(--gold-bg)}
+
 /* 部署说明 */
 .guide{margin-top:14px}
 .guide ol{padding-left:18px}
@@ -302,15 +326,24 @@ a{color:var(--blue);text-decoration:none}
 
 <div class="wrap">
 
-  <!-- ===== API Key 配置 ===== -->
-  <div class="card">
-    <div class="card-title"><span class="dot"></span>TickFlow API Key 配置</div>
-    <div class="key-row">
-      <input type="password" class="key-input" id="apiKey" placeholder="粘贴你的 TickFlow API Key" autocomplete="off">
-      <button class="key-toggle" id="keyToggle" onclick="toggleKeySave()">保存</button>
+  <!-- ===== 数据源模式提示 ===== -->
+  <div class="card mode-card" id="modeCard">
+    <div class="mode-row">
+      <div class="mode-icon free" id="modeIcon">🆓</div>
+      <div class="mode-info">
+        <div class="mode-label" id="modeLabel">免费模式 · 无需注册</div>
+        <div class="mode-desc" id="modeDesc">使用 TickFlow 免费日K数据，收盘后数据完整准确</div>
+      </div>
     </div>
-    <div class="key-hint">
-      免费 API Key：<a href="https://tickflow.org/auth/register/" target="_blank">tickflow.org 注册获取</a> · 注册即送免费额度，无需信用卡 · Key 保存在本地浏览器
+    <div class="mode-toggle" id="keyToggleArea" onclick="toggleKeyInput()">
+      <span id="toggleText">升级为实时模式（盘中可用）▾</span>
+    </div>
+    <div class="key-row" id="keyRow" style="display:none;margin-top:10px">
+      <input type="password" class="key-input" id="apiKey" placeholder="粘贴 TickFlow API Key（可选）" autocomplete="off">
+      <button class="key-toggle" id="keyToggle" onclick="saveKey()">保存</button>
+    </div>
+    <div class="key-hint" id="keyHint" style="display:none">
+      免费 API Key：<a href="https://tickflow.org/auth/register/" target="_blank">tickflow.org 注册获取</a> · 填写后启用实时行情（盘中可用）· Key 仅存本地浏览器
     </div>
   </div>
 
@@ -327,6 +360,7 @@ a{color:var(--blue);text-decoration:none}
       <span class="quick-code" onclick="quickFill('300750')">300750 宁德</span>
       <span class="quick-code" onclick="quickFill('002594')">002594 比亚迪</span>
     </div>
+    <div class="data-time" id="dataTime"></div>
   </div>
 
   <!-- ===== 加载中 ===== -->
@@ -363,7 +397,7 @@ a{color:var(--blue);text-decoration:none}
     <div class="disclaimer">
       ⚠️ 免责声明：本工具仅用于学习研究，不构成任何投资建议。股市有风险，投资需谨慎。数据来源 TickFlow API，可能存在延迟，请以交易所实时数据为准。
     </div>
-    Powered by TickFlow · 腾讯云 CloudBase · TRAE
+    Powered by TickFlow 免费日K API · 腾讯云 CloudBase · TRAE · 无需注册即可使用
   </div>
 
 </div>
@@ -371,10 +405,13 @@ a{color:var(--blue);text-decoration:none}
 <script>
 /* ============================================================
  * A股智能选股雷达 - 核心逻辑
- * 数据源：TickFlow API (https://api.tickflow.org/v1)
+ * 数据源：TickFlow API
+ *   - 免费模式（无需注册）：https://free-api.tickflow.org/v1  仅日K+标的信息
+ *   - 实时模式（需API Key）：https://api.tickflow.org/v1      含实时行情
  * ============================================================ */
 
-const API_BASE = 'https://api.tickflow.org/v1';
+const FREE_BASE = 'https://free-api.tickflow.org/v1';  // 免费，无需Key
+const FULL_BASE = 'https://api.tickflow.org/v1';        // 完整，需Key
 
 /* ---------- 工具函数 ---------- */
 
@@ -413,36 +450,99 @@ function fmtVol(v){
   if(v >= 1e4) return (v/1e4).toFixed(2) + '万股';
   return v.toFixed(0) + '股';
 }
-
-/* ---------- API Key 管理 ---------- */
-
-function getApiKey(){
-  // 优先从输入框，其次 localStorage
-  let key = document.getElementById('apiKey').value.trim();
-  if(key) return key;
-  return localStorage.getItem('tf_api_key') || '';
+// 时间戳转日期字符串
+function tsToDate(ts){
+  const d = new Date(ts);
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
 }
-function toggleKeySave(){
-  const input = document.getElementById('apiKey');
-  const btn = document.getElementById('keyToggle');
-  const key = input.value.trim();
+
+/* ---------- 模式与 API Key 管理 ---------- */
+
+// 判断当前是否为实时模式（有 API Key）
+function isProMode(){
+  const key = document.getElementById('apiKey').value.trim();
+  return !!key;
+}
+// 获取当前 API base url
+function getApiBase(){
+  return isProMode() ? FULL_BASE : FREE_BASE;
+}
+// 获取 API Key（实时模式用，免费模式返回空）
+function getApiKey(){
+  return document.getElementById('apiKey').value.trim();
+}
+
+// 切换 Key 输入区显示
+function toggleKeyInput(){
+  const row = document.getElementById('keyRow');
+  const hint = document.getElementById('keyHint');
+  const txt = document.getElementById('toggleText');
+  if(row.style.display === 'none'){
+    row.style.display = 'flex';
+    hint.style.display = 'block';
+    txt.textContent = '收起 ▴';
+  }else{
+    row.style.display = 'none';
+    hint.style.display = 'none';
+    txt.textContent = '升级为实时模式（盘中可用）▾';
+  }
+}
+function saveKey(){
+  const key = document.getElementById('apiKey').value.trim();
   if(!key){ alert('请先输入 API Key'); return; }
   localStorage.setItem('tf_api_key', key);
+  updateModeDisplay();
+  const btn = document.getElementById('keyToggle');
   btn.textContent = '已保存';
   btn.classList.add('active');
   setTimeout(()=>{ btn.textContent='保存'; btn.classList.remove('active'); },1500);
 }
-// 初始化时恢复保存的 Key
+// 更新模式显示
+function updateModeDisplay(){
+  const pro = isProMode();
+  const icon = document.getElementById('modeIcon');
+  const label = document.getElementById('modeLabel');
+  const desc = document.getElementById('modeDesc');
+  if(pro){
+    icon.textContent = '⚡';
+    icon.className = 'mode-icon pro';
+    label.textContent = '实时模式 · 盘中可用';
+    label.className = 'mode-label pro';
+    desc.textContent = '已启用 TickFlow 实时行情，支持盘中实时数据分析';
+  }else{
+    icon.textContent = '🆓';
+    icon.className = 'mode-icon free';
+    label.textContent = '免费模式 · 无需注册';
+    label.className = 'mode-label free';
+    desc.textContent = '使用 TickFlow 免费日K数据，收盘后数据完整准确';
+  }
+}
+// 初始化：恢复已保存的 Key
 (function initKey(){
   const saved = localStorage.getItem('tf_api_key');
-  if(saved) document.getElementById('apiKey').value = saved;
+  if(saved){
+    document.getElementById('apiKey').value = saved;
+    document.getElementById('keyRow').style.display = 'flex';
+    document.getElementById('keyHint').style.display = 'block';
+    document.getElementById('toggleText').textContent = '收起 ▴';
+  }
+  updateModeDisplay();
 })();
 
 /* ---------- TickFlow API 调用 ---------- */
 
-async function fetchQuote(symbol, apiKey){
-  const url = `${API_BASE}/quotes?symbols=${encodeURIComponent(symbol)}`;
-  const res = await fetch(url, { headers: { 'x-api-key': apiKey } });
+// 构建请求头（免费模式无Key，实时模式带Key）
+function buildHeaders(){
+  const h = { 'Content-Type': 'application/json' };
+  const key = getApiKey();
+  if(key) h['x-api-key'] = key;
+  return h;
+}
+
+// 实时模式：获取实时行情
+async function fetchQuote(symbol){
+  const url = `${FULL_BASE}/quotes?symbols=${encodeURIComponent(symbol)}`;
+  const res = await fetch(url, { headers: buildHeaders() });
   if(!res.ok){
     const err = await res.json().catch(()=>({}));
     throw new Error(`行情请求失败(${res.status}): ${err.message || res.statusText}`);
@@ -451,12 +551,30 @@ async function fetchQuote(symbol, apiKey){
   return json.data && json.data[0] ? json.data[0] : null;
 }
 
-async function fetchKlines(symbol, apiKey, count=20){
-  const url = `${API_BASE}/klines?symbol=${encodeURIComponent(symbol)}&period=1d&count=${count}&adjust=forward`;
-  const res = await fetch(url, { headers: { 'x-api-key': apiKey } });
+// 获取标的信息（股票名称、流通股本等）- 免费模式也可用
+async function fetchInstruments(symbol){
+  // 免费服务的 GET /instruments 需要 symbols 参数，但格式是批量。用 POST 更稳定
+  const url = `${getApiBase()}/instruments`;
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: buildHeaders(),
+    body: JSON.stringify({ symbols: [symbol] })
+  });
+  if(!res.ok){
+    // 降级：不阻塞流程，返回 null
+    return null;
+  }
+  const json = await res.json();
+  return json.data && json.data[0] ? json.data[0] : null;
+}
+
+// 获取K线数据（免费/实时模式通用）
+async function fetchKlines(symbol, count=20){
+  const url = `${getApiBase()}/klines?symbol=${encodeURIComponent(symbol)}&period=1d&count=${count}&adjust=forward`;
+  const res = await fetch(url, { headers: buildHeaders() });
   if(!res.ok){
     const err = await res.json().catch(()=>({}));
-    throw new Error(`K线请求失败(${res.status}): ${err.message || res.statusText}`);
+    throw new Error(`K线请求失败(${res.status}): ${err.message || err.code || res.statusText}`);
   }
   const json = await res.json();
   const d = json.data;
@@ -476,6 +594,51 @@ async function fetchKlines(symbol, apiKey, count=20){
     });
   }
   return bars; // 最旧 -> 最新
+}
+
+/**
+ * 免费模式：从日K数据推导"行情快照"
+ * 用最近一根日K（=今天收盘后或最近交易日）作为"今日"数据
+ * 今日涨幅 = (今日close - 昨日close) / 昨日close
+ * 换手率 = 今日volume / 流通股本
+ */
+function deriveQuoteFromBars(bars, inst){
+  const n = bars.length;
+  if(n < 2) return null;
+  const today = bars[n-1];
+  const yest = bars[n-2];
+  const lastPrice = today.close;
+  const prevClose = yest.close;
+  const changePct = (lastPrice - prevClose) / prevClose; // 小数
+  const changeAmt = lastPrice - prevClose;
+  const amplitude = (today.high - today.low) / prevClose;
+  // 换手率 = 成交量 / 流通股本
+  let turnoverRate = null;
+  if(inst && inst.ext && inst.ext.float_shares){
+    turnoverRate = today.volume / inst.ext.float_shares;
+  }
+  return {
+    symbol: inst ? inst.symbol : null,
+    region: 'CN',
+    last_price: lastPrice,
+    prev_close: prevClose,
+    open: today.open,
+    high: today.high,
+    low: today.low,
+    volume: today.volume,
+    amount: today.amount,
+    timestamp: today.ts,
+    _derived: true,         // 标记为推导数据
+    _trade_date: tsToDate(today.ts),
+    ext: inst ? {
+      type: 'cn_equity',
+      name: inst.name,
+      change_pct: changePct,
+      change_amount: changeAmt,
+      amplitude: amplitude,
+      turnover_rate: turnoverRate,
+    } : { name: null, change_pct: changePct, change_amount: changeAmt, amplitude: amplitude, turnover_rate: turnoverRate }
+  };
 }
 
 /* ---------- 五大筛选条件算法 ---------- */
@@ -618,37 +781,50 @@ function checkCond5(bars){
 
 async function runAnalysis(){
   const codeInput = document.getElementById('stockCode').value.trim();
-  const apiKey = getApiKey();
+  const pro = isProMode();
 
   // 校验输入
   if(!codeInput){ showError('请输入股票代码（6位数字）'); return; }
   const symbol = toSymbol(codeInput);
   if(!symbol){ showError('股票代码格式错误，请输入6位数字（如 000001、600519）'); return; }
-  if(!apiKey){
-    showError('请先配置 TickFlow API Key。<br>免费注册：<a href="https://tickflow.org/auth/register/" target="_blank">tickflow.org</a>');
-    return;
-  }
+  // 免费模式无需 Key，直接可用
 
   // UI 状态切换
   hideError();
   document.getElementById('results').classList.remove('show');
   document.getElementById('loading').classList.add('show');
   setBtnLoading(true);
-  setLoadingText('正在获取实时行情...');
+  setLoadingText(pro ? '正在获取实时行情...' : '正在获取日K数据...');
 
   try{
-    // 1. 获取实时行情
-    const quote = await fetchQuote(symbol, apiKey);
-    if(!quote){
-      throw new Error('未找到该股票行情，请检查代码是否正确。');
+    let quote = null;
+    let inst = null;
+
+    // 1a. 获取标的信息（股票名称、流通股本）—— 免费模式也可用
+    try{
+      inst = await fetchInstruments(symbol);
+    }catch(e){ /* 标的信息获取失败不阻塞，后续用 symbol 兜底 */ }
+
+    // 1b. 获取行情数据
+    if(pro){
+      // 实时模式：调用 quotes 接口获取盘中实时行情
+      quote = await fetchQuote(symbol);
     }
 
     setLoadingText('正在获取K线历史数据...');
 
-    // 2. 获取K线数据（20根日K，前复权）
-    const bars = await fetchKlines(symbol, apiKey, 20);
+    // 2. 获取K线数据（20根日K，前复权）—— 免费模式核心数据
+    const bars = await fetchKlines(symbol, 20);
     if(bars.length < 6){
       throw new Error('K线历史数据不足，无法完成分析。');
+    }
+
+    // 2b. 免费模式：从日K推导行情快照
+    if(!quote){
+      quote = deriveQuoteFromBars(bars, inst);
+      if(!quote){
+        throw new Error('无法从日K数据推导行情，请检查股票代码是否正确。');
+      }
     }
 
     setLoadingText('正在执行五大条件筛选...');
@@ -664,25 +840,55 @@ async function runAnalysis(){
     const allPass = conditions.every(c => c.pass);
 
     // 4. 计算辅助信号
-    const stockName = (quote.ext && quote.ext.name) ? quote.ext.name : symbol;
+    const stockName = (quote.ext && quote.ext.name) ? quote.ext.name : (inst ? inst.name : symbol);
     const signals = buildSignals(quote, bars, c4, c5);
 
-    // 5. 渲染结果
+    // 5. 显示数据时间提示
+    showDataTime(quote, pro);
+
+    // 6. 渲染结果
     renderResults({
-      symbol, stockName, quote, bars,
-      conditions, allPass, signals
+      symbol, stockName, quote, bars, inst,
+      conditions, allPass, signals, pro
     });
 
   }catch(err){
     let msg = err.message || String(err);
     // CORS 或网络错误友好提示
     if(err instanceof TypeError && err.message.includes('Failed to fetch')){
-      msg = '网络请求失败，可能是以下原因：<br>1. API Key 无效或未填写<br>2. 网络连接问题<br>3. 浏览器跨域(CORS)限制<br><br>请检查 API Key 是否正确，或稍后重试。';
+      msg = '网络请求失败，请检查：<br>1. 网络连接是否正常<br>2. 实时模式下 API Key 是否正确<br>3. 是否被浏览器跨域(CORS)限制<br><br>免费模式无需 Key，可直接使用。';
     }
     showError(msg);
   }finally{
     document.getElementById('loading').classList.remove('show');
     setBtnLoading(false);
+  }
+}
+
+// 显示数据时间提示
+function showDataTime(quote, pro){
+  const box = document.getElementById('dataTime');
+  if(pro){
+    // 实时模式
+    box.textContent = '⚡ 实时数据 · 盘中实时更新';
+    box.className = 'data-time show';
+  }else{
+    // 免费模式 - 日K推导，显示最新交易日
+    const date = quote._trade_date || '未知';
+    const now = new Date();
+    const hh = String(now.getHours()).padStart(2,'0');
+    const mm = String(now.getMinutes()).padStart(2,'0');
+    // 判断是否为交易时段（9:25-15:00 工作日）
+    const h = now.getHours();
+    const dow = now.getDay();
+    const isTrading = dow>=1 && dow<=5 && h>=9 && h<15;
+    if(isTrading){
+      box.innerHTML = `🆓 免费日K数据 · 最新交易日：<b>${date}</b> · 盘中数据为昨日收盘，如需实时请填写 API Key`;
+      box.className = 'data-time show warn';
+    }else{
+      box.innerHTML = `🆓 免费日K数据 · 最新交易日：<b>${date}</b> · 收盘后数据已更新`;
+      box.className = 'data-time show';
+    }
   }
 }
 
@@ -725,7 +931,7 @@ function buildSignals(quote, bars, c4, c5){
 /* ---------- 结果渲染 ---------- */
 
 function renderResults(data){
-  const { symbol, stockName, quote, conditions, allPass, signals } = data;
+  const { symbol, stockName, quote, conditions, allPass, signals, pro } = data;
   const c1=conditions[0], c2=conditions[1], c3=conditions[2], c4=conditions[3], c5=conditions[4];
 
   const condNames = [
@@ -737,6 +943,7 @@ function renderResults(data){
   ];
 
   const passCount = conditions.filter(c=>c.pass).length;
+  const modeTag = pro ? '⚡实时' : '🆓免费日K';
 
   let html = '';
 
@@ -745,7 +952,7 @@ function renderResults(data){
     <div class="verdict ${allPass?'pass':'fail'} fade-in">
       <div class="icon">${allPass?'✅':'❌'}</div>
       <div class="title">${allPass?'符合全部条件，重点关注！':'暂不符合全部条件'}</div>
-      <div class="desc">${stockName} (${symbol}) · 满足 ${passCount}/5 项条件</div>
+      <div class="desc">${stockName} (${symbol}) · 满足 ${passCount}/5 项条件 · ${modeTag}${quote._trade_date?' · '+quote._trade_date:''}</div>
     </div>`;
 
   // 关键指标
